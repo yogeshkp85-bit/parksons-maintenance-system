@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parksons Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0d13; --surface:#111620; --surface2:#171d2b;
+  --border:#1e2a3d; --accent:#f0a500; --blue:#2d7bf4;
+  --green:#1fc67a; --red:#e84040; --purple:#9b5de5;
+  --text:#d8e0ee; --muted:#6b7a99;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; min-height:100vh; }
+
+/* ── LOADING ── */
+.ls { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:999; gap:18px; }
+.ls-logo { font-family:'Rajdhani',sans-serif; font-size:48px; font-weight:700; color:var(--accent); letter-spacing:6px; }
+.ls-bar { width:200px; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
+.ls-fill { height:100%; background:var(--accent); animation:lb 1s ease forwards; }
+@keyframes lb { to { width:100%; } }
+.ls-txt { font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+
+/* ── LOGIN ── */
+.login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.login-box {
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  padding:40px; width:360px; text-align:center;
+}
+.login-logo { font-family:'Rajdhani',sans-serif; font-size:36px; font-weight:700; color:var(--accent); letter-spacing:4px; margin-bottom:6px; }
+.login-title { font-size:13px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:28px; }
+.login-box input {
+  width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  padding:12px 14px; border-radius:5px; font-family:'Exo 2',sans-serif; font-size:14px;
+  margin-bottom:12px; outline:none; transition:border-color .2s;
+}
+.login-box input:focus { border-color:var(--accent); }
+.btn-login {
+  width:100%; padding:12px; background:var(--accent); color:#0a0d13;
+  border:none; border-radius:5px; font-family:'Rajdhani',sans-serif;
+  font-size:15px; font-weight:700; letter-spacing:1px; cursor:pointer;
+  transition:opacity .2s;
+}
+.btn-login:hover { opacity:.88; }
+.login-err { color:var(--red); font-size:12px; margin-top:8px; display:none; }
+
+/* ── HEADER ── */
+.header {
+  background:linear-gradient(135deg,#0d1220,#111a2e);
+  border-bottom:2px solid var(--blue);
+  padding:0 28px; height:62px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:50;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+.h-left { display:flex; align-items:center; gap:14px; }
+.logo { width:38px; height:38px; background:var(--blue); display:flex; align-items:center; justify-content:center; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:15px; color:#fff; clip-path:polygon(10% 0%,90% 0%,100% 10%,100% 90%,90% 100%,10% 100%,0% 90%,0% 10%); }
+.h-title { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:18px; letter-spacing:2px; color:#fff; }
+.h-sub { font-size:10px; color:var(--muted); letter-spacing:1px; margin-top:2px; }
+.h-right { display:flex; align-items:center; gap:14px; }
+.badge-count { background:var(--red); color:#fff; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; }
+.btn-dash { background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 14px; border-radius:4px; font-family:'Exo 2',sans-serif; font-size:12px; cursor:pointer; transition:all .2s; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+.btn-dash:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── TABS ── */
+.tabs { background:var(--surface); border-bottom:1px solid var(--border); padding:0 28px; display:flex; gap:0; }
+.tab { padding:14px 20px; font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; }
+.tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+.tab:hover:not(.active) { color:var(--text); }
+.tab-badge { background:var(--red); color:#fff; font-size:9px; padding:2px 6px; border-radius:8px; margin-left:6px; }
+
+/* ── MAIN ── */
+.main { padding:22px 28px; }
+
+/* ── STATS BAR ── */
+.stats-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px; }
+.stat { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
+.stat-n { font-family:'Rajdhani',sans-serif; font-size:30px; font-weight:700; }
+.stat-l { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
+.stat.pending .stat-n { color:var(--accent); }
+.stat.approved .stat-n { color:var(--green); }
+.stat.rejected .stat-n { color:var(--red); }
+.stat.total .stat-n   { color:var(--blue); }
+
+/* ── FILTER ROW ── */
+.filter-row { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+select, .srch { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:7px 12px; border-radius:4px; font-family:'Exo 2',sans-serif; font-size:13px; outline:none; }
+select { appearance:none; -webkit-appearance:none; padding-right:26px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; cursor:pointer; }
+select:focus, .srch:focus { border-color:var(--blue); }
+.srch { flex:1; min-width:180px; }
+.btn-sm { padding:7px 14px; border-radius:4px; font-family:'Exo 2',sans-serif; font-size:12px; cursor:pointer; font-weight:600; border:none; transition:all .2s; }
+.btn-approve-all { background:rgba(31,198,122,.15); color:var(--green); border:1px solid rgba(31,198,122,.3); }
+.btn-approve-all:hover { background:rgba(31,198,122,.25); }
+
+/* ── ENTRY CARDS ── */
+.entries { display:flex; flex-direction:column; gap:12px; }
+.entry-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:6px;
+  overflow:hidden; transition:border-color .2s;
+}
+.entry-card.pending  { border-left:3px solid var(--accent); }
+.entry-card.approved { border-left:3px solid var(--green); opacity:.7; }
+.entry-card.rejected { border-left:3px solid var(--red); opacity:.55; }
+
+.card-header {
+  padding:12px 16px; background:var(--surface2);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  cursor:pointer; user-select:none;
+}
+.card-meta { display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1; }
+.ref-id { font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:600; color:var(--accent); }
+.card-machine { font-weight:600; font-size:14px; }
+.card-info { font-size:12px; color:var(--muted); }
+.status-pill {
+  padding:3px 10px; border-radius:10px; font-size:10px; font-weight:700;
+  letter-spacing:.5px; text-transform:uppercase; white-space:nowrap;
+}
+.pill-PENDING_REVIEW { background:rgba(240,165,0,.15); color:var(--accent); border:1px solid rgba(240,165,0,.3); }
+.pill-APPROVED       { background:rgba(31,198,122,.15); color:var(--green); border:1px solid rgba(31,198,122,.3); }
+.pill-REJECTED       { background:rgba(232,64,64,.15);  color:var(--red);   border:1px solid rgba(232,64,64,.3); }
+.card-toggle { color:var(--muted); font-size:18px; transition:transform .3s; }
+.card-toggle.open { transform:rotate(180deg); }
+
+/* ── CARD BODY (expanded) ── */
+.card-body { display:none; padding:18px 16px; border-top:1px solid var(--border); }
+.card-body.open { display:block; }
+
+.field-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.field-group { display:flex; flex-direction:column; gap:4px; }
+.field-label { font-size:9px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+.field-input {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  padding:8px 10px; border-radius:4px; font-family:'Exo 2',sans-serif; font-size:13px;
+  width:100%; outline:none; transition:border-color .2s;
+}
+.field-input:focus { border-color:var(--blue); }
+.field-input.readonly { opacity:.6; cursor:not-allowed; }
+.field-input.changed { border-color:var(--accent) !important; background:rgba(240,165,0,.05); }
+select.field-input { appearance:none; -webkit-appearance:none; padding-right:26px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; }
+.field-full { grid-column:1/-1; }
+textarea.field-input { resize:vertical; min-height:56px; }
+
+.action-bar { display:flex; gap:10px; align-items:center; padding-top:14px; border-top:1px solid var(--border); flex-wrap:wrap; }
+.action-bar .msg { font-size:12px; flex:1; }
+.msg-ok  { color:var(--green); }
+.msg-err { color:var(--red); }
+
+.btn-action { padding:9px 18px; border-radius:4px; font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:700; letter-spacing:.5px; cursor:pointer; border:none; transition:all .2s; display:flex; align-items:center; gap:6px; }
+.btn-approve { background:var(--green); color:#fff; }
+.btn-approve:hover { opacity:.85; }
+.btn-update-approve { background:var(--blue); color:#fff; }
+.btn-update-approve:hover { opacity:.85; }
+.btn-save { background:transparent; color:var(--accent); border:1px solid rgba(240,165,0,.4); }
+.btn-save:hover { background:rgba(240,165,0,.1); }
+.btn-reject { background:transparent; color:var(--red); border:1px solid rgba(232,64,64,.4); }
+.btn-reject:hover { background:rgba(232,64,64,.1); }
+.btn-action:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ── EMPTY STATE ── */
+.empty { padding:60px; text-align:center; color:var(--muted); }
+.empty-icon { font-size:48px; margin-bottom:12px; }
+.empty-txt { font-size:15px; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px) {
+  .field-grid { grid-template-columns:repeat(2,1fr); }
+  .stats-bar  { grid-template-columns:repeat(2,1fr); }
+  .main, .header { padding:12px 14px; }
+  .tabs { padding:0 14px; }
+}
+@media(max-width:580px) {
+  .field-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="ls" id="ls">
+  <div class="ls-logo">PKS</div>
+  <div class="ls-bar"><div class="ls-fill"></div></div>
+  <div class="ls-txt">Loading Admin Panel</div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">PKS</div>
+    <div class="login-title">Admin Panel — Secure Access</div>
+    <input type="password" id="pwdInput" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn-login" onclick="doLogin()">SIGN IN</button>
+    <div class="login-err" id="loginErr">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appWrap" style="display:none">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="h-left">
+      <div class="logo">ADM</div>
+      <div>
+        <div class="h-title">ADMIN PANEL</div>
+        <div class="h-sub">PARKSONS MAINTENANCE — ENTRY APPROVAL SYSTEM</div>
+      </div>
+    </div>
+    <div class="h-right">
+      <span class="badge-count" id="pendingBadge">0 Pending</span>
+      <a class="btn-dash" id="dashLink" href="#" target="_blank">&#x1F4CA; Dashboard</a>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tabPending" onclick="switchTab('pending')">
+      Pending Review <span class="tab-badge" id="tabBadge">0</span>
+    </div>
+    <div class="tab" id="tabAll" onclick="switchTab('all')">All Entries</div>
+    <div class="tab" id="tabApproved" onclick="switchTab('approved')">Approved</div>
+    <div class="tab" id="tabRejected" onclick="switchTab('rejected')">Rejected</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- STATS -->
+    <div class="stats-bar">
+      <div class="stat pending">  <div class="stat-n" id="stPending">-</div> <div class="stat-l">Pending Review</div></div>
+      <div class="stat approved"> <div class="stat-n" id="stApproved">-</div><div class="stat-l">Approved</div></div>
+      <div class="stat rejected"> <div class="stat-n" id="stRejected">-</div><div class="stat-l">Rejected</div></div>
+      <div class="stat total">    <div class="stat-n" id="stTotal">-</div>   <div class="stat-l">Total Entries</div></div>
+    </div>
+
+    <!-- FILTER ROW -->
+    <div class="filter-row">
+      <input class="srch" type="text" id="searchBox" placeholder="Search machine, technician, description..." oninput="renderEntries()">
+      <select id="filterDept" onchange="renderEntries()"><option value="">All Departments</option></select>
+      <select id="filterShift" onchange="renderEntries()"><option value="">All Shifts</option></select>
+      <select id="filterCat" onchange="renderEntries()"><option value="">All Categories</option></select>
+      <button class="btn-sm btn-approve-all" id="btnApproveAll" onclick="approveAllPending()" style="display:none">&#x2713; Approve All Pending</button>
+    </div>
+
+    <!-- ENTRIES LIST -->
+    <div class="entries" id="entriesList">
+      <div class="empty"><div class="empty-icon">&#x23F3;</div><div class="empty-txt">Loading entries...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+var BASE_URL = '<?= baseUrl ?>';
+var ADMIN_PWD = 'PKS@2026'; // Must match CONFIG.adminPassword in Code.gs
+
+// ── DROPDOWN OPTIONS ─────────────────────────────────────────
+var OPTS = {
+  shift:    ['First Shift','Second Shift','Third Shift'],
+  mType:    ['PRINTING','CORRUGATION','NFDIECUTTING','NFPASTING','LAMINATION','FLDIECUTTING','FLPASTING','HANDPUNCING','LIQUIDLINE','OTHERS','SCRAP'],
+  probType: ['Electrical','Mechanical','Mech/Elect','Pneumatic air','Utility'],
+  category: ['Breakdown','Predictive','Planning','Preventive','Corrective','Operational','Shift Start up'],
+  attended: ['Ashish','Shivaji','Sandip','Sharad','Vikas','Ravi','Sachine','Krishna','Dattaram','Akshay','PM team','Baba','Sangram','Ramdas','Chandan','YogeshK','GaneshS','KedarP','YogeshP']
+};
+
+// ── STATE ─────────────────────────────────────────────────────
+var ALL_ENTRIES   = [];
+var CURRENT_TAB   = 'pending';
+var SESSION_OK    = false;
+
+// ── LOADING + AUTH ────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('dashLink').href = BASE_URL + '?page=dashboard';
+  setTimeout(function() {
+    document.getElementById('ls').style.display = 'none';
+    // Check session
+    if (sessionStorage.getItem('pks_admin') === ADMIN_PWD) {
+      showApp();
+    } else {
+      document.getElementById('loginWrap').style.display = 'flex';
+    }
+  }, 1000);
+});
+
+function doLogin() {
+  var pwd = document.getElementById('pwdInput').value;
+  if (pwd === ADMIN_PWD) {
+    sessionStorage.setItem('pks_admin', pwd);
+    document.getElementById('loginWrap').style.display = 'none';
+    showApp();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+  }
+}
+
+function showApp() {
+  SESSION_OK = true;
+  document.getElementById('appWrap').style.display = 'block';
+  loadEntries();
+}
+
+// ── LOAD DATA ─────────────────────────────────────────────────
+function loadEntries() {
+  showLoading();
+  fetch(BASE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'getPending' })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.status !== 'success') {
+      showError('Failed to load: ' + (data.message || 'Unknown error'));
+      return;
+    }
+    ALL_ENTRIES = data.all || [];
+    populateFilterDropdowns();
+    updateStats();
+    renderEntries();
+  })
+  .catch(function(e) {
+    showError('Network error: ' + e.toString());
+  });
+}
+
+function showLoading() {
+  document.getElementById('entriesList').innerHTML =
+    '<div class="empty"><div class="empty-icon">&#x23F3;</div><div class="empty-txt">Loading entries from Google Sheet...</div></div>';
+}
+
+function showError(msg) {
+  document.getElementById('entriesList').innerHTML =
+    '<div class="empty"><div class="empty-icon">&#x26A0;</div><div class="empty-txt" style="color:var(--red)">'+msg+'</div></div>';
+}
+
+// ── POPULATE FILTER DROPDOWNS ─────────────────────────────────
+function populateFilterDropdowns() {
+  var depts=[], shifts=[], cats=[];
+  ALL_ENTRIES.forEach(function(e) {
+    if (e.machineType && depts.indexOf(e.machineType)<0)  depts.push(e.machineType);
+    if (e.shift       && shifts.indexOf(e.shift)<0)        shifts.push(e.shift);
+    if (e.category    && cats.indexOf(e.category)<0)       cats.push(e.category);
+  });
+  fillSel('filterDept',  depts.sort());
+  fillSel('filterShift', shifts.sort());
+  fillSel('filterCat',   cats.sort());
+}
+
+function fillSel(id, opts) {
+  var s = document.getElementById(id);
+  while (s.options.length > 1) s.remove(1);
+  opts.forEach(function(o){ var x=document.createElement('option'); x.value=o; x.textContent=o; s.appendChild(x); });
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function updateStats() {
+  var pending=0, approved=0, rejected=0;
+  ALL_ENTRIES.forEach(function(e){
+    if (e.status==='PENDING_REVIEW') pending++;
+    else if (e.status==='APPROVED')  approved++;
+    else if (e.status==='REJECTED')  rejected++;
+  });
+  document.getElementById('stPending').textContent  = pending;
+  document.getElementById('stApproved').textContent = approved;
+  document.getElementById('stRejected').textContent = rejected;
+  document.getElementById('stTotal').textContent    = ALL_ENTRIES.length;
+  document.getElementById('pendingBadge').textContent = pending + ' Pending';
+  document.getElementById('tabBadge').textContent = pending;
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  CURRENT_TAB = tab;
+  ['pending','all','approved','rejected'].forEach(function(t) {
+    document.getElementById('tab'+cap(t)).classList.toggle('active', t===tab);
+  });
+  document.getElementById('btnApproveAll').style.display = (tab==='pending') ? 'block' : 'none';
+  renderEntries();
+}
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// ── RENDER ENTRIES ────────────────────────────────────────────
+function renderEntries() {
+  var search = (document.getElementById('searchBox').value||'').toLowerCase();
+  var fDept  = document.getElementById('filterDept').value;
+  var fShift = document.getElementById('filterShift').value;
+  var fCat   = document.getElementById('filterCat').value;
+
+  var filtered = ALL_ENTRIES.filter(function(e) {
+    // Tab filter
+    if (CURRENT_TAB==='pending'  && e.status !== 'PENDING_REVIEW') return false;
+    if (CURRENT_TAB==='approved' && e.status !== 'APPROVED')        return false;
+    if (CURRENT_TAB==='rejected' && e.status !== 'REJECTED')        return false;
+    // Dropdown filters
+    if (fDept  && e.machineType !== fDept)  return false;
+    if (fShift && e.shift       !== fShift) return false;
+    if (fCat   && e.category    !== fCat)   return false;
+    // Search
+    if (search) {
+      var hay = [e.machineName,e.machineType,e.attendedBy,e.description,e.refId,e.category].join(' ').toLowerCase();
+      if (hay.indexOf(search) < 0) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    var msg = CURRENT_TAB==='pending' ? 'No pending entries &#x2714; All clear!' : 'No entries found.';
+    document.getElementById('entriesList').innerHTML =
+      '<div class="empty"><div class="empty-icon">'+(CURRENT_TAB==='pending'?'&#x2705;':'&#x1F4C2;')+'</div><div class="empty-txt">'+msg+'</div></div>';
+    return;
+  }
+
+  // Newest first
+  var sorted = filtered.slice().reverse();
+  document.getElementById('entriesList').innerHTML = sorted.map(function(e){ return buildCard(e); }).join('');
+}
+
+// ── BUILD ENTRY CARD ─────────────────────────────────────────
+function buildCard(e) {
+  var isPending = e.status === 'PENDING_REVIEW';
+  var cls       = isPending ? 'pending' : (e.status==='APPROVED'?'approved':'rejected');
+  var pillCls   = 'pill-'+e.status;
+
+  var actionBtns = '';
+  if (isPending) {
+    actionBtns =
+      '<button class="btn-action btn-approve" onclick="approveEntry(\''+e.rowNum+'\',\''+e.refId+'\',this)">&#x2714; Approve As-Is</button>' +
+      '<button class="btn-action btn-update-approve" onclick="updateAndApprove(\''+e.rowNum+'\',\''+e.refId+'\',this)">&#x270F; Save &amp; Approve</button>' +
+      '<button class="btn-action btn-save" onclick="saveEdits(\''+e.rowNum+'\',\''+e.refId+'\',this)">&#x1F4BE; Save Edits Only</button>' +
+      '<button class="btn-action btn-reject" onclick="rejectEntry(\''+e.rowNum+'\',\''+e.refId+'\',this)">&#x2716; Reject</button>';
+  } else {
+    actionBtns = '<span style="font-size:12px;color:var(--muted)">Entry '+e.status.toLowerCase()+' — no further action available</span>';
+  }
+
+  var readonlyAttr = isPending ? '' : ' readonly class="field-input readonly"';
+  var inputClass   = isPending ? 'field-input' : 'field-input readonly';
+
+  function mkInput(name, val, readonlyOverride) {
+    var ro = (readonlyOverride || !isPending) ? ' readonly' : '';
+    var cls2 = ro ? 'field-input readonly' : 'field-input';
+    return '<input type="text" class="'+cls2+'" id="f_'+e.rowNum+'_'+name+'" value="'+esc(val)+'"'+ro+' oninput="markChanged(this)">';
+  }
+
+  function mkSelect(name, val, optArr) {
+    if (!isPending) return mkInput(name, val, true);
+    var opts = optArr.map(function(o){
+      return '<option value="'+esc(o)+'"'+(o===val?' selected':'')+'>'+esc(o)+'</option>';
+    }).join('');
+    return '<select class="field-input" id="f_'+e.rowNum+'_'+name+'" onchange="markChanged(this)"><option value="">—</option>'+opts+'</select>';
+  }
+
+  return '<div class="entry-card '+cls+'" id="card_'+e.rowNum+'">' +
+
+    // ── CARD HEADER ──
+    '<div class="card-header" onclick="toggleCard(\''+e.rowNum+'\')">' +
+      '<div class="card-meta">' +
+        '<span class="ref-id">'+esc(e.refId)+'</span>' +
+        '<span class="card-machine">'+esc(e.machineName)+'</span>' +
+        '<span class="card-info">'+esc(e.machineType)+' &middot; '+esc(e.shift)+'</span>' +
+        '<span class="card-info" style="color:var(--text)">'+esc(e.category)+'</span>' +
+        '<span class="card-info">'+esc(e.date)+' &middot; '+esc(e.attendedBy)+'</span>' +
+        (e.duration ? '<span class="card-info" style="color:var(--accent)">'+esc(e.duration)+' min</span>' : '') +
+      '</div>' +
+      '<span class="status-pill '+pillCls+'">'+e.status.replace('_',' ')+'</span>' +
+      '<span class="card-toggle" id="toggle_'+e.rowNum+'">&#x25BE;</span>' +
+    '</div>' +
+
+    // ── CARD BODY ──
+    '<div class="card-body" id="body_'+e.rowNum+'">' +
+      '<div class="field-grid">' +
+
+        '<div class="field-group"><div class="field-label">Date</div>'+mkInput('date', e.date)+'</div>' +
+        '<div class="field-group"><div class="field-label">Shift</div>'+mkSelect('shift', e.shift, OPTS.shift)+'</div>' +
+        '<div class="field-group"><div class="field-label">Machine Type</div>'+mkSelect('machineType', e.machineType, OPTS.mType)+'</div>' +
+        '<div class="field-group"><div class="field-label">Machine Name</div>'+mkInput('machineName', e.machineName)+'</div>' +
+
+        '<div class="field-group"><div class="field-label">Unit</div>'+mkInput('unit', e.unit)+'</div>' +
+        '<div class="field-group"><div class="field-label">Problem Type</div>'+mkSelect('problemType', e.problemType, OPTS.probType)+'</div>' +
+        '<div class="field-group"><div class="field-label">Category</div>'+mkSelect('category', e.category, OPTS.category)+'</div>' +
+        '<div class="field-group"><div class="field-label">Attended By</div>'+mkSelect('attendedBy', e.attendedBy, OPTS.attended)+'</div>' +
+
+        '<div class="field-group"><div class="field-label">Time Start</div>'+mkInput('timeStart', e.timeStart)+'</div>' +
+        '<div class="field-group"><div class="field-label">Time End</div>'+mkInput('timeEnd', e.timeEnd)+'</div>' +
+        '<div class="field-group"><div class="field-label">Duration (min)</div>'+mkInput('duration', e.duration)+'</div>' +
+        '<div class="field-group"><div class="field-label">Submitted By</div>'+mkInput('submittedBy', e.submittedBy, true)+'</div>' +
+
+        '<div class="field-group field-full"><div class="field-label">Description of Problem</div>' +
+          (isPending ? '<textarea class="field-input" id="f_'+e.rowNum+'_description" oninput="markChanged(this)">'+esc(e.description)+'</textarea>'
+                     : '<textarea class="field-input readonly" readonly>'+esc(e.description)+'</textarea>') +
+        '</div>' +
+
+        '<div class="field-group field-full"><div class="field-label">Action Taken</div>' +
+          (isPending ? '<textarea class="field-input" id="f_'+e.rowNum+'_actionTaken" oninput="markChanged(this)">'+esc(e.actionTaken)+'</textarea>'
+                     : '<textarea class="field-input readonly" readonly>'+esc(e.actionTaken)+'</textarea>') +
+        '</div>' +
+
+        '<div class="field-group field-full"><div class="field-label">Root Cause</div>' +
+          (isPending ? '<textarea class="field-input" id="f_'+e.rowNum+'_rootCause" oninput="markChanged(this)">'+esc(e.rootCause)+'</textarea>'
+                     : '<textarea class="field-input readonly" readonly>'+esc(e.rootCause)+'</textarea>') +
+        '</div>' +
+
+        '<div class="field-group field-full"><div class="field-label">Remarks</div>' +
+          (isPending ? '<input class="field-input" type="text" id="f_'+e.rowNum+'_remarks" value="'+esc(e.remarks)+'" oninput="markChanged(this)">'
+                     : '<input class="field-input readonly" type="text" readonly value="'+esc(e.remarks)+'">') +
+        '</div>' +
+
+      '</div>' + // end field-grid
+
+      '<div class="action-bar">' +
+        actionBtns +
+        '<span class="msg" id="msg_'+e.rowNum+'"></span>' +
+      '</div>' +
+    '</div>' + // end card-body
+
+  '</div>'; // end entry-card
+}
+
+// ── TOGGLE CARD ───────────────────────────────────────────────
+function toggleCard(rowNum) {
+  var body   = document.getElementById('body_'+rowNum);
+  var toggle = document.getElementById('toggle_'+rowNum);
+  var isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+}
+
+// ── MARK CHANGED FIELDS ───────────────────────────────────────
+function markChanged(el) { el.classList.add('changed'); }
+
+// ── COLLECT FIELD VALUES ─────────────────────────────────────
+function getFields(rowNum) {
+  function v(name) {
+    var el = document.getElementById('f_'+rowNum+'_'+name);
+    return el ? el.value : '';
+  }
+  return {
+    rowNum:      rowNum,
+    date:        v('date'),
+    shift:       v('shift'),
+    machineType: v('machineType'),
+    machineName: v('machineName'),
+    unit:        v('unit'),
+    problemType: v('problemType'),
+    category:    v('category'),
+    description: v('description'),
+    actionTaken: v('actionTaken'),
+    rootCause:   v('rootCause'),
+    timeStart:   v('timeStart'),
+    timeEnd:     v('timeEnd'),
+    duration:    v('duration'),
+    attendedBy:  v('attendedBy'),
+    remarks:     v('remarks')
+  };
+}
+
+// ── API CALL ──────────────────────────────────────────────────
+function callApi(payload, msgId, successMsg, onSuccess) {
+  setMsg(msgId, '&#x23F3; Working...', '');
+  disableCard(payload.rowNum, true);
+
+  fetch(BASE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.status === 'success') {
+      setMsg(msgId, '&#x2714; '+successMsg, 'ok');
+      if (onSuccess) onSuccess();
+      // Reload data after 1s
+      setTimeout(function(){ loadEntries(); }, 1200);
+    } else {
+      setMsg(msgId, '&#x2716; Error: '+(data.message||'Unknown'), 'err');
+      disableCard(payload.rowNum, false);
+    }
+  })
+  .catch(function(e){
+    setMsg(msgId, '&#x2716; Network error: '+e.toString(), 'err');
+    disableCard(payload.rowNum, false);
+  });
+}
+
+function setMsg(id, html, type) {
+  var el = document.getElementById('msg_'+id);
+  if (!el) return;
+  el.innerHTML = html;
+  el.className = 'msg' + (type==='ok'?' msg-ok':type==='err'?' msg-err':'');
+}
+
+function disableCard(rowNum, disabled) {
+  var card = document.getElementById('card_'+rowNum);
+  if (!card) return;
+  card.querySelectorAll('button').forEach(function(b){ b.disabled = disabled; });
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────
+function approveEntry(rowNum, refId, btn) {
+  callApi({ action:'approve', rowNum:rowNum, refId:refId }, rowNum, 'Approved!');
+}
+
+function rejectEntry(rowNum, refId, btn) {
+  if (!confirm('Reject this entry?\n\nRef: '+refId+'\n\nIt will be marked REJECTED in the sheet.')) return;
+  callApi({ action:'reject', rowNum:rowNum, refId:refId }, rowNum, 'Rejected.');
+}
+
+function saveEdits(rowNum, refId, btn) {
+  var fields = getFields(rowNum);
+  fields.action = 'update';
+  fields.refId  = refId;
+  callApi(fields, rowNum, 'Edits saved — still pending review.');
+}
+
+function updateAndApprove(rowNum, refId, btn) {
+  var fields = getFields(rowNum);
+  fields.action = 'updateApprove';
+  fields.refId  = refId;
+  callApi(fields, rowNum, 'Updated and Approved!');
+}
+
+function approveAllPending() {
+  var pending = ALL_ENTRIES.filter(function(e){ return e.status==='PENDING_REVIEW'; });
+  if (pending.length === 0) { alert('No pending entries.'); return; }
+  if (!confirm('Approve ALL '+pending.length+' pending entries?\n\nThis cannot be undone.')) return;
+
+  var i = 0;
+  function next() {
+    if (i >= pending.length) { loadEntries(); return; }
+    var e = pending[i++];
+    fetch(BASE_URL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'approve', rowNum:e.rowNum, refId:e.refId })
+    }).then(function(){ setTimeout(next, 300); }).catch(function(){ setTimeout(next, 300); });
+  }
+  next();
+}
+
+// ── UTILITIES ─────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

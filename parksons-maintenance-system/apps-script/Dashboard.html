@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parksons Maintenance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0d13; --surface:#111620; --surface2:#171d2b;
+  --border:#1e2a3d; --accent:#f0a500; --blue:#2d7bf4;
+  --green:#1fc67a; --red:#e84040; --purple:#9b5de5;
+  --text:#d8e0ee; --muted:#6b7a99;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; min-height:100vh; overflow-x:hidden; }
+
+/* LOADING */
+.loading-screen {
+  position:fixed; inset:0; background:var(--bg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:999; gap:20px;
+}
+.loading-logo { font-family:'Rajdhani',sans-serif; font-size:52px; font-weight:700; color:var(--accent); letter-spacing:8px; }
+.loading-bar { width:220px; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
+.loading-fill { height:100%; background:var(--accent); animation:loadbar 1.4s ease forwards; }
+@keyframes loadbar { to { width:100%; } }
+.loading-text { font-size:11px; color:var(--muted); letter-spacing:3px; text-transform:uppercase; }
+
+/* HEADER */
+.header {
+  background:linear-gradient(135deg,#0d1220,#111a2e);
+  border-bottom:2px solid var(--accent);
+  padding:0 28px; height:64px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:100;
+  box-shadow:0 4px 24px rgba(0,0,0,.5);
+}
+.h-left { display:flex; align-items:center; gap:14px; }
+.logo {
+  width:40px; height:40px; background:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Rajdhani',sans-serif; font-weight:700; font-size:16px; color:#0a0d13;
+  clip-path:polygon(10% 0%,90% 0%,100% 10%,100% 90%,90% 100%,10% 100%,0% 90%,0% 10%);
+}
+.h-title { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:19px; letter-spacing:2px; color:#fff; }
+.h-sub { font-size:10px; color:var(--muted); letter-spacing:1px; margin-top:2px; }
+.h-right { display:flex; align-items:center; gap:18px; }
+.live { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--green); letter-spacing:1px; text-transform:uppercase; }
+.live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.gen-time { font-size:11px; color:var(--muted); }
+
+/* FILTER BAR */
+.filter-bar {
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:10px 28px;
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+}
+.fl { font-size:10px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
+select {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  padding:6px 26px 6px 10px; border-radius:4px;
+  font-family:'Exo 2',sans-serif; font-size:13px; cursor:pointer;
+  outline:none; appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 8px center;
+  transition:border-color .2s;
+}
+select:focus { border-color:var(--accent); }
+.fsep { width:1px; height:22px; background:var(--border); }
+.btn-reset {
+  background:transparent; border:1px solid var(--border); color:var(--muted);
+  padding:6px 14px; border-radius:4px; font-family:'Exo 2',sans-serif;
+  font-size:12px; cursor:pointer; transition:all .2s;
+}
+.btn-reset:hover { border-color:var(--accent); color:var(--accent); }
+
+/* MAIN */
+.main { padding:22px 28px; }
+.section-title {
+  font-family:'Rajdhani',sans-serif; font-size:11px; font-weight:600;
+  letter-spacing:3px; text-transform:uppercase; color:var(--muted);
+  margin-bottom:14px; display:flex; align-items:center; gap:10px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* KPI GRID */
+.kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:26px; }
+.kpi {
+  background:var(--surface); border:1px solid var(--border); border-radius:6px;
+  padding:18px 18px 14px; position:relative; overflow:hidden;
+  transition:transform .2s, border-color .2s;
+}
+.kpi:hover { transform:translateY(-2px); border-color:var(--accent); }
+.kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.kpi.amber::before { background:var(--accent); }
+.kpi.blue::before  { background:var(--blue); }
+.kpi.red::before   { background:var(--red); }
+.kpi.purple::before{ background:var(--purple); }
+.kpi.green::before { background:var(--green); }
+.kpi-lbl { font-size:9px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.kpi-val { font-family:'Rajdhani',sans-serif; font-size:38px; font-weight:700; line-height:1; margin-bottom:2px; }
+.kpi.amber .kpi-val { color:var(--accent); }
+.kpi.blue  .kpi-val { color:var(--blue); }
+.kpi.red   .kpi-val { color:var(--red); }
+.kpi.purple.kpi-val { color:var(--purple); }
+.kpi.green .kpi-val { color:var(--green); }
+.kpi-unit { font-size:12px; color:var(--muted); }
+.kpi-sub  { font-size:10px; color:var(--muted); margin-top:8px; }
+
+/* CHART GRIDS */
+.g2 { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:26px; }
+.g3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:26px; }
+.chart-card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:18px; }
+.chart-ttl {
+  font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase;
+  margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;
+}
+.cbadge { font-size:10px; padding:2px 7px; background:var(--surface2); border-radius:3px; color:var(--muted); }
+
+/* TABLE */
+.tcard { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-bottom:26px; }
+.thead-bar {
+  padding:14px 18px; border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase;
+}
+.tcount { font-size:11px; color:var(--muted); font-family:'Exo 2',sans-serif; font-weight:400; text-transform:none; letter-spacing:0; }
+.tscroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+thead th {
+  background:var(--surface2); padding:9px 12px; text-align:left;
+  font-size:9px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap;
+}
+tbody tr { border-bottom:1px solid rgba(30,42,61,.4); transition:background .15s; }
+tbody tr:hover { background:rgba(255,255,255,.02); }
+tbody td { padding:8px 12px; vertical-align:middle; }
+.cbadge-cat {
+  display:inline-block; padding:2px 7px; border-radius:3px;
+  font-size:9px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+}
+.cat-Breakdown   { background:rgba(232,64,64,.15);  color:var(--red);    border:1px solid rgba(232,64,64,.3); }
+.cat-Preventive  { background:rgba(45,123,244,.15); color:var(--blue);   border:1px solid rgba(45,123,244,.3); }
+.cat-Corrective  { background:rgba(240,165,0,.15);  color:var(--accent); border:1px solid rgba(240,165,0,.3); }
+.cat-Operational { background:rgba(31,198,122,.15); color:var(--green);  border:1px solid rgba(31,198,122,.3); }
+.cat-Predictive  { background:rgba(155,93,229,.15); color:var(--purple); border:1px solid rgba(155,93,229,.3); }
+.cat-Planning    { background:rgba(107,122,153,.15);color:var(--muted);  border:1px solid rgba(107,122,153,.3); }
+.dh { color:var(--red);    font-weight:600; }
+.dm { color:var(--accent); font-weight:600; }
+.dl { color:var(--green); }
+
+/* MACHINE GRID */
+.mg { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:26px; }
+.abar { height:5px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:3px; }
+.afill { height:100%; border-radius:3px; }
+
+/* FOOTER */
+.footer { text-align:center; padding:18px; font-size:10px; color:var(--muted); border-top:1px solid var(--border); letter-spacing:.5px; }
+
+/* RESPONSIVE */
+@media(max-width:1200px){ .kpi-grid{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .g2,.g3,.mg{grid-template-columns:1fr;}
+  .main,.filter-bar,.header{padding:12px 14px;}
+  .header{height:auto;padding:12px 14px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="ls">
+  <div class="loading-logo">PKS</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div class="loading-text">Loading Maintenance Dashboard</div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="h-left">
+    <div class="logo">PKS</div>
+    <div>
+      <div class="h-title">PARKSONS MAINTENANCE SYSTEM</div>
+      <div class="h-sub">EQUIPMENT RELIABILITY &amp; DOWNTIME INTELLIGENCE</div>
+    </div>
+  </div>
+  <div class="h-right">
+    <div class="live"><div class="live-dot"></div>LIVE DATA</div>
+    <div class="gen-time" id="genTime"></div>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <span class="fl">Filter:</span>
+  <select id="fMonth"    onchange="applyFilters()"><option value="">All Months</option></select>
+  <div class="fsep"></div>
+  <select id="fDept"     onchange="applyFilters()"><option value="">All Departments</option></select>
+  <div class="fsep"></div>
+  <select id="fMachine"  onchange="applyFilters()"><option value="">All Machines</option></select>
+  <div class="fsep"></div>
+  <select id="fShift"    onchange="applyFilters()"><option value="">All Shifts</option></select>
+  <div class="fsep"></div>
+  <select id="fCategory" onchange="applyFilters()"><option value="">All Categories</option></select>
+  <div class="fsep"></div>
+  <button class="btn-reset" onclick="resetFilters()">&#x21BA; Reset</button>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="mainContent" style="display:none">
+
+  <div class="section-title">KEY PERFORMANCE INDICATORS</div>
+  <div class="kpi-grid">
+    <div class="kpi amber">
+      <div class="kpi-lbl">Avg MTTR</div>
+      <div class="kpi-val" id="kMTTR">-</div>
+      <div class="kpi-unit">minutes</div>
+      <div class="kpi-sub">Mean Time To Repair (Breakdown only)</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-lbl">Avg MTBF</div>
+      <div class="kpi-val" id="kMTBF">-</div>
+      <div class="kpi-unit">minutes</div>
+      <div class="kpi-sub">Mean Time Between Failures</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-lbl">Total Downtime</div>
+      <div class="kpi-val" id="kDown">-</div>
+      <div class="kpi-unit">hours</div>
+      <div class="kpi-sub">All maintenance categories</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-lbl">Breakdown Count</div>
+      <div class="kpi-val" id="kBD">-</div>
+      <div class="kpi-unit">events</div>
+      <div class="kpi-sub">Category = Breakdown only</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-lbl">Avg Availability</div>
+      <div class="kpi-val" id="kAvail">-</div>
+      <div class="kpi-unit">%</div>
+      <div class="kpi-sub">Per machine per month</div>
+    </div>
+  </div>
+
+  <div class="section-title">TREND ANALYSIS</div>
+  <div class="g2">
+    <div class="chart-card">
+      <div class="chart-ttl">Monthly Downtime &amp; Breakdown Count <span class="cbadge">ALL DEPTS</span></div>
+      <canvas id="cMonthly" height="190"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-ttl">Category Distribution <span class="cbadge">DOUGHNUT</span></div>
+      <canvas id="cCat" height="190"></canvas>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="chart-card">
+      <div class="chart-ttl">MTTR Trend by Month <span class="cbadge">MIN</span></div>
+      <canvas id="cMTTR" height="210"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-ttl">Breakdown by Department <span class="cbadge">COUNT</span></div>
+      <canvas id="cDept" height="210"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-ttl">Shift-wise Downtime <span class="cbadge">HRS</span></div>
+      <canvas id="cShift" height="210"></canvas>
+    </div>
+  </div>
+
+  <div class="section-title">MACHINE AVAILABILITY</div>
+  <div class="mg">
+    <div class="tcard">
+      <div class="thead-bar">Machine Summary <span class="tcount" id="mCount"></span></div>
+      <div class="tscroll">
+        <table>
+          <thead><tr><th>Machine</th><th>Dept</th><th>BD</th><th>Down (min)</th><th>Availability</th></tr></thead>
+          <tbody id="mBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-ttl">Top 10 — Downtime by Machine <span class="cbadge">MIN</span></div>
+      <canvas id="cMach" height="250"></canvas>
+    </div>
+  </div>
+
+  <div class="section-title">RECENT MAINTENANCE ENTRIES</div>
+  <div class="tcard">
+    <div class="thead-bar">Latest Records <span class="tcount" id="tCount"></span></div>
+    <div class="tscroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Machine</th><th>Dept</th><th>Shift</th>
+            <th>Category</th><th>Problem</th><th>Duration</th><th>By</th><th>Description</th>
+          </tr>
+        </thead>
+        <tbody id="dBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer" id="mainFooter" style="display:none">
+  PARKSONS PACKAGING LTD &nbsp;&middot;&nbsp; MAINTENANCE INTELLIGENCE SYSTEM &nbsp;&middot;&nbsp;
+  <span id="footerTime"></span>
+</div>
+
+<script>
+// ── DATA (injected by Apps Script template) ──────────────────
+var RAW = <?= dataJson ?>;
+var F   = [];
+var CH  = {};
+
+// ── INIT ─────────────────────────────────────────────────────
+Chart.defaults.color        = '#6b7a99';
+Chart.defaults.borderColor  = '#1e2a3d';
+Chart.defaults.font.family  = '"Exo 2", sans-serif';
+
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    document.getElementById('ls').style.display          = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('mainFooter').style.display  = 'block';
+
+    var ts = new Date().toLocaleDateString('en-IN',
+      { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    document.getElementById('genTime').textContent    = 'Generated: ' + ts;
+    document.getElementById('footerTime').textContent = 'Generated: ' + ts;
+
+    populateFilters();
+    applyFilters();
+  }, 1400);
+});
+
+// ── POPULATE FILTERS ─────────────────────────────────────────
+function populateFilters() {
+  var rows = RAW.rows || [];
+  var mo=[], de=[], ma=[], sh=[], ca=[];
+  rows.forEach(function(r) {
+    if (r.monthYear   && mo.indexOf(r.monthYear)   < 0) mo.push(r.monthYear);
+    if (r.machineType && de.indexOf(r.machineType) < 0) de.push(r.machineType);
+    if (r.machineName && ma.indexOf(r.machineName) < 0) ma.push(r.machineName);
+    if (r.shift       && sh.indexOf(r.shift)       < 0) sh.push(r.shift);
+    if (r.category    && ca.indexOf(r.category)    < 0) ca.push(r.category);
+  });
+  fillSel('fMonth',    sortMonths(mo));
+  fillSel('fDept',     de.sort());
+  fillSel('fMachine',  ma.sort());
+  fillSel('fShift',    sh.sort());
+  fillSel('fCategory', ca.sort());
+}
+
+function fillSel(id, opts) {
+  var s = document.getElementById(id);
+  // remove old options except first
+  while (s.options.length > 1) s.remove(1);
+  opts.forEach(function(o) {
+    var x = document.createElement('option'); x.value = o; x.textContent = o; s.appendChild(x);
+  });
+}
+
+function sortMonths(arr) {
+  var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return arr.sort(function(a,b) {
+    var pa = a.split('-'), pb = b.split('-');
+    var ya = parseInt(pa[1]||'0',10), yb = parseInt(pb[1]||'0',10);
+    if (ya !== yb) return ya - yb;
+    return mo.indexOf(pa[0]) - mo.indexOf(pb[0]);
+  });
+}
+
+// ── APPLY FILTERS ────────────────────────────────────────────
+function applyFilters() {
+  var fM  = document.getElementById('fMonth').value;
+  var fD  = document.getElementById('fDept').value;
+  var fMa = document.getElementById('fMachine').value;
+  var fS  = document.getElementById('fShift').value;
+  var fC  = document.getElementById('fCategory').value;
+
+  // Cascade: update machine list based on dept
+  if (fD) {
+    var cur = document.getElementById('fMachine').value;
+    var ma = [];
+    (RAW.rows || []).forEach(function(r) {
+      if (r.machineType === fD && r.machineName && ma.indexOf(r.machineName) < 0)
+        ma.push(r.machineName);
+    });
+    fillSel('fMachine', ma.sort());
+    document.getElementById('fMachine').value = cur;
+    fMa = document.getElementById('fMachine').value;
+  }
+
+  F = (RAW.rows || []).filter(function(r) {
+    if (fM  && r.monthYear   !== fM)  return false;
+    if (fD  && r.machineType !== fD)  return false;
+    if (fMa && r.machineName !== fMa) return false;
+    if (fS  && r.shift       !== fS)  return false;
+    if (fC  && r.category    !== fC)  return false;
+    return true;
+  });
+
+  renderKPIs();
+  renderCharts();
+  renderMachineTable();
+  renderDataTable();
+}
+
+function resetFilters() {
+  ['fMonth','fDept','fMachine','fShift','fCategory'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  populateFilters();
+  applyFilters();
+}
+
+// ── KPIs ─────────────────────────────────────────────────────
+function renderKPIs() {
+  var bd    = F.filter(function(r){ return r.category === 'Breakdown'; });
+  var bdc   = bd.length;
+  var totM  = F.reduce(function(s,r){ return s+(r.minutes||0); }, 0);
+  var mttr  = bdc > 0 ? Math.round(bd.reduce(function(s,r){ return s+r.minutes; },0)/bdc) : 0;
+
+  // MTBF per machine-month
+  var mm = {};
+  F.forEach(function(r) {
+    var k = r.machineName + '|' + r.monthYear;
+    if (!mm[k]) mm[k] = { av: r.availableMin||44640, bm:0, bc:0 };
+    if (r.category === 'Breakdown') { mm[k].bm += r.minutes; mm[k].bc++; }
+  });
+  var mtbfL = [];
+  Object.keys(mm).forEach(function(k){
+    var m=mm[k]; if(m.bc>0) mtbfL.push((m.av-m.bm)/m.bc);
+  });
+  var mtbf = mtbfL.length > 0 ? Math.round(mtbfL.reduce(function(a,b){return a+b;},0)/mtbfL.length) : 0;
+
+  // Availability per machine-month (all downtime)
+  var ad = {};
+  F.forEach(function(r) {
+    var k = r.machineName + '|' + r.monthYear;
+    if (!ad[k]) ad[k] = { d:0, a:r.availableMin||44640 };
+    ad[k].d += (r.minutes||0);
+  });
+  var al = Object.keys(ad).map(function(k){ var m=ad[k]; return Math.min(100,Math.max(0,((m.a-m.d)/m.a)*100)); });
+  var avgA = al.length > 0 ? (al.reduce(function(a,b){return a+b;},0)/al.length).toFixed(2) : '100.00';
+
+  set('kMTTR',  mttr  || '—');
+  set('kMTBF',  mtbf  || '—');
+  set('kDown',  (totM/60).toFixed(1));
+  set('kBD',    bdc);
+  set('kAvail', avgA);
+}
+function set(id,v){ document.getElementById(id).textContent = v; }
+
+// ── CHARTS ───────────────────────────────────────────────────
+function dc(id){ if(CH[id]){CH[id].destroy();delete CH[id];} }
+
+function renderCharts() {
+  chartMonthly(); chartCategory(); chartMTTR(); chartDept(); chartShift(); chartMachine();
+}
+
+function chartMonthly() {
+  dc('m');
+  var md = {};
+  F.forEach(function(r) {
+    if (!r.monthYear) return;
+    if (!md[r.monthYear]) md[r.monthYear] = {d:0,b:0};
+    md[r.monthYear].d += (r.minutes||0)/60;
+    if (r.category==='Breakdown') md[r.monthYear].b++;
+  });
+  var ms = sortMonths(Object.keys(md));
+  CH['m'] = new Chart(document.getElementById('cMonthly'), {
+    type:'bar',
+    data:{ labels:ms, datasets:[
+      { label:'Downtime (hrs)', data:ms.map(function(m){return+md[m].d.toFixed(1);}),
+        backgroundColor:'rgba(240,165,0,0.7)', borderColor:'#f0a500', borderWidth:1, yAxisID:'y' },
+      { label:'Breakdown Count', data:ms.map(function(m){return md[m].b;}),
+        type:'line', borderColor:'#e84040', backgroundColor:'rgba(232,64,64,0.1)',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#e84040',
+        fill:true, tension:0.35, yAxisID:'y2' }
+    ]},
+    options:{ responsive:true,
+      plugins:{ legend:{ labels:{font:{size:11},padding:10} } },
+      scales:{
+        y:  { grid:{color:'#1e2a3d'}, ticks:{font:{size:11}} },
+        y2: { position:'right', grid:{display:false}, ticks:{font:{size:11}} }
+      }
+    }
+  });
+}
+
+function chartCategory() {
+  dc('c');
+  var cd={};
+  F.forEach(function(r){ if(r.category) cd[r.category]=(cd[r.category]||0)+1; });
+  var cats=Object.keys(cd);
+  var clr={Breakdown:'#e84040',Preventive:'#2d7bf4',Corrective:'#f0a500',Operational:'#1fc67a',Predictive:'#9b5de5',Planning:'#6b7a99','Shift Start up':'#e05c2a'};
+  CH['c'] = new Chart(document.getElementById('cCat'),{
+    type:'doughnut',
+    data:{ labels:cats, datasets:[{
+      data:cats.map(function(c){return cd[c];}),
+      backgroundColor:cats.map(function(c){return clr[c]||'#4ecdc4';}),
+      borderColor:'#111620', borderWidth:2, hoverOffset:6
+    }]},
+    options:{ responsive:true, cutout:'62%',
+      plugins:{ legend:{ position:'right', labels:{font:{size:11},padding:8,boxWidth:10} } }
+    }
+  });
+}
+
+function chartMTTR() {
+  dc('t');
+  var md={};
+  F.filter(function(r){return r.category==='Breakdown';}).forEach(function(r){
+    if(!r.monthYear)return;
+    if(!md[r.monthYear])md[r.monthYear]={t:0,c:0};
+    md[r.monthYear].t+=r.minutes; md[r.monthYear].c++;
+  });
+  var ms=sortMonths(Object.keys(md));
+  CH['t'] = new Chart(document.getElementById('cMTTR'),{
+    type:'line',
+    data:{ labels:ms, datasets:[{
+      label:'Avg MTTR (min)',
+      data:ms.map(function(m){return md[m].c?Math.round(md[m].t/md[m].c):0;}),
+      borderColor:'#f0a500', backgroundColor:'rgba(240,165,0,0.12)',
+      borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#f0a500', fill:true, tension:0.35
+    }]},
+    options:{ responsive:true,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{grid:{color:'#1e2a3d'},ticks:{font:{size:11}}}, x:{grid:{display:false},ticks:{font:{size:10}}} }
+    }
+  });
+}
+
+function chartDept() {
+  dc('d');
+  var dd={};
+  F.filter(function(r){return r.category==='Breakdown';}).forEach(function(r){
+    if(r.machineType) dd[r.machineType]=(dd[r.machineType]||0)+1;
+  });
+  var depts=Object.keys(dd).sort(function(a,b){return dd[b]-dd[a];});
+  var pal=['#2d7bf4','#f0a500','#e84040','#1fc67a','#9b5de5','#e05c2a','#6b7a99','#4ecdc4','#ffe66d','#a8dadc'];
+  CH['d'] = new Chart(document.getElementById('cDept'),{
+    type:'bar', data:{ labels:depts, datasets:[{
+      label:'Breakdowns',
+      data:depts.map(function(d){return dd[d];}),
+      backgroundColor:depts.map(function(_,i){return pal[i%pal.length];}), borderRadius:4
+    }]},
+    options:{ responsive:true, indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{ x:{grid:{color:'#1e2a3d'},ticks:{font:{size:10}}}, y:{grid:{display:false},ticks:{font:{size:10}}} }
+    }
+  });
+}
+
+function chartShift() {
+  dc('s');
+  var sd={};
+  F.forEach(function(r){ var s=r.shift||'Unknown'; sd[s]=(sd[s]||0)+(r.minutes||0)/60; });
+  var sh=Object.keys(sd);
+  CH['s'] = new Chart(document.getElementById('cShift'),{
+    type:'polarArea',
+    data:{ labels:sh, datasets:[{
+      data:sh.map(function(s){return+sd[s].toFixed(1);}),
+      backgroundColor:['rgba(45,123,244,0.75)','rgba(240,165,0,0.75)','rgba(232,64,64,0.75)','rgba(31,198,122,0.75)'],
+      borderColor:'#111620', borderWidth:2
+    }]},
+    options:{ responsive:true,
+      plugins:{ legend:{position:'bottom',labels:{font:{size:10},padding:6,boxWidth:10}} },
+      scales:{ r:{grid:{color:'#1e2a3d'},ticks:{font:{size:9},backdropColor:'transparent'}} }
+    }
+  });
+}
+
+function chartMachine() {
+  dc('ma');
+  var md={};
+  F.forEach(function(r){ if(r.machineName) md[r.machineName]=(md[r.machineName]||0)+(r.minutes||0); });
+  var machs=Object.keys(md).sort(function(a,b){return md[b]-md[a];}).slice(0,10);
+  CH['ma'] = new Chart(document.getElementById('cMach'),{
+    type:'bar', data:{ labels:machs, datasets:[{
+      label:'Downtime (min)',
+      data:machs.map(function(m){return md[m];}),
+      backgroundColor:'rgba(232,64,64,0.7)', borderColor:'#e84040', borderWidth:1, borderRadius:3
+    }]},
+    options:{ responsive:true, indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{ x:{grid:{color:'#1e2a3d'},ticks:{font:{size:9}}}, y:{grid:{display:false},ticks:{font:{size:10}}} }
+    }
+  });
+}
+
+// ── MACHINE TABLE ─────────────────────────────────────────────
+function renderMachineTable() {
+  var mm={};
+  F.forEach(function(r){
+    if(!r.machineName)return;
+    if(!mm[r.machineName])mm[r.machineName]={dept:r.machineType,bc:0,d:0,a:r.availableMin||44640};
+    if(r.category==='Breakdown')mm[r.machineName].bc++;
+    mm[r.machineName].d+=(r.minutes||0);
+  });
+  var machs=Object.keys(mm).sort(function(a,b){return mm[b].d-mm[a].d;});
+  document.getElementById('mCount').textContent = machs.length + ' machines';
+  var h='';
+  machs.forEach(function(m){
+    var x=mm[m];
+    var av=Math.min(100,Math.max(0,((x.a-x.d)/x.a)*100));
+    var ac=av>=99?'var(--green)':av>=97?'var(--accent)':'var(--red)';
+    h += '<tr>' +
+      '<td><strong>'+m+'</strong></td>' +
+      '<td style="color:var(--muted);font-size:10px">'+x.dept+'</td>' +
+      '<td>'+x.bc+'</td>' +
+      '<td class="'+(x.d>120?'dh':x.d>30?'dm':'dl')+'">'+x.d+'</td>' +
+      '<td>' +
+        '<div style="color:'+ac+';font-weight:600;font-size:12px">'+av.toFixed(2)+'%</div>' +
+        '<div class="abar"><div class="afill" style="width:'+av+'%;background:'+ac+'"></div></div>' +
+      '</td>' +
+      '</tr>';
+  });
+  document.getElementById('mBody').innerHTML = h || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">No data for selected filters</td></tr>';
+}
+
+// ── DATA TABLE ────────────────────────────────────────────────
+function renderDataTable() {
+  var rows = F.slice().reverse().slice(0,100);
+  document.getElementById('tCount').textContent = F.length + ' entries (latest 100 shown)';
+  var h='';
+  rows.forEach(function(r){
+    var dc2 = r.minutes>120?'dh':r.minutes>30?'dm':'dl';
+    var cc  = 'cbadge-cat cat-'+(r.category||'').replace(/\s+/g,'');
+    var ds  = (r.description||'').substring(0,55)+((r.description||'').length>55?'…':'');
+    h += '<tr>' +
+      '<td style="white-space:nowrap;color:var(--muted)">'+r.date+'</td>' +
+      '<td><strong>'+r.machineName+'</strong></td>' +
+      '<td style="font-size:10px;color:var(--muted)">'+r.machineType+'</td>' +
+      '<td style="font-size:11px">'+r.shift+'</td>' +
+      '<td><span class="cbadge-cat '+cc+'">'+r.category+'</span></td>' +
+      '<td style="font-size:10px;color:var(--muted)">'+r.problemType+'</td>' +
+      '<td class="'+dc2+'">'+r.minutes+' min</td>' +
+      '<td style="font-size:11px">'+r.attendedBy+'</td>' +
+      '<td style="font-size:10px;color:var(--muted)">'+ds+'</td>' +
+      '</tr>';
+  });
+  document.getElementById('dBody').innerHTML = h || '<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--muted)">No records for selected filters</td></tr>';
+}
+</script>
+</body>
+</html>

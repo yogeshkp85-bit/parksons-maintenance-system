@@ -1,0 +1,14 @@
+# CLASP will NOT push these files to Apps Script
+**/**
+!apps-script/**
+!apps-script/*.gs
+!apps-script/*.html
+
+# Ignore these specifically
+node_modules/
+.git/
+*.xlsx
+*.xlsm
+docs/
+form/
+README.md

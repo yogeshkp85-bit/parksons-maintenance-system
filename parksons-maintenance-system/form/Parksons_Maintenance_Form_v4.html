@@ -618,7 +618,8 @@ body {
   <div id="submitErr" style="color:#f85149;font-size:0.78rem;padding:8px;text-align:center;display:none;margin-bottom:8px"></div>
   <button class="btn-submit" id="btnSubmit" onclick="submitForm()">Submit Maintenance Log</button>
   <button class="btn-clear" onclick="clearForm()">Clear Form</button>
-  <button class="btn-clear" onclick="openAdminPanel()" style="margin-top:6px;border-color:#a371f7;color:#a371f7;">&#9881; Admin Config</button>
+  <button type="button" class="btn-clear" onclick="openWebAdminPanel()" style="margin-top:8px;border-color:#388bfd;color:#58a6ff;">Admin Panel</button>
+  <button type="button" class="btn-clear" onclick="openAdminPanel()" style="margin-top:6px;border-color:#a371f7;color:#a371f7;">&#9881; Local admin config</button>
   <div class="sheets-status" id="sheetsStatus" style="display:none"></div>
 
 </div>
@@ -1340,10 +1341,19 @@ function addMachine(type, name, units) {
 
 
 /* ============================================================
-   ADMIN PANEL JAVASCRIPT
-   Password: PKS2026 (change below if needed)
+   ADMIN PANEL — Local overlay (machine lists, technicians)
+   Web approval UI: openWebAdminPanel() → deployed ?page=admin (password in Code.gs)
    ============================================================ */
-var ADMIN_PASSWORD = "PKS2026";
+var ADMIN_PASSWORD = "PKS@2026";
+
+/** Opens the deployed Apps Script Admin page (password login on that page). */
+function openWebAdminPanel() {
+  if (!SCRIPT_URL || SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+    alert("Set SCRIPT_URL in this file to your Apps Script web app URL (Deploy → copy /exec URL).");
+    return;
+  }
+  window.open(SCRIPT_URL + "?page=admin", "_blank", "noopener");
+}
 
 function openAdminPanel() {
   document.getElementById('adminOverlay').style.display = 'block';

@@ -45,22 +45,12 @@ var COL = {
 };
 
 // ── ALWAYS USE THIS for URLs — reads live deployment URL ──────
-// ── DEPLOYMENT URL ────────────────────────────────────────────
-// UPDATE THIS after every new deployment (clasp deploy or manual)
-// Get it from: Deploy → Manage Deployments → copy the /exec URL
-var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec';
-
 function getBaseUrl() {
-  // Hardcoded URL is most reliable — ScriptApp.getService().getUrl()
-  // can return wrong URL when called from menu or trigger context.
-  // After each new deployment, update DEPLOYMENT_URL above.
-  if (DEPLOYMENT_URL && DEPLOYMENT_URL.indexOf('YOUR_DEPLOYMENT_ID') === -1) {
-    return DEPLOYMENT_URL;
-  }
   try {
     return ScriptApp.getService().getUrl();
   } catch(e) {
-    return DEPLOYMENT_URL;
+    // Fallback if called outside web context
+    return 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
   }
 }
 
@@ -213,7 +203,6 @@ function getDashboardData() {
   if (lastRow < 2) return { error: null, rows: [], generated: new Date().toISOString() };
 
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  // Rows 2 … lastRow (inclusive). Do not use lastRow-1 — that drops the newest row and breaks when only one data row exists.
   var rawData = sheet.getRange(2, 1, lastRow, sheet.getLastColumn()).getValues();
 
   var colMap = {};
@@ -384,7 +373,6 @@ function writeFormSubmission(data) {
     ('PKS-' + Utilities.formatDate(now, CONFIG.timezone, 'yyyyMMdd') + '-' +
               Utilities.formatDate(now, CONFIG.timezone, 'HHmmss'));
 
-  // Store a real Date in column C (not locale-ambiguous text) so Final_Data ARRAYFORMULA / DATEVALUE stay correct.
   var dateForSheet = parseDateForSheet(data.date || '');
 
   sheet.appendRow([
@@ -430,8 +418,6 @@ function buildStatusMap() {
   return map;
 }
 
-// Build a Date at calendar midnight in the script timezone (Asia/Kolkata) for Raw_Data column C.
-// Prefer this over plain text dd/MM/yyyy so linked Final_Data formulas (DATEVALUE, TEXT, etc.) stay reliable.
 function parseDateForSheet(dateStr) {
   if (!dateStr) return '';
   if (dateStr instanceof Date && !isNaN(dateStr)) {

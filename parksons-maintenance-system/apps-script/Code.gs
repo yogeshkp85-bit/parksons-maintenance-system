@@ -13,12 +13,15 @@
 // ============================================================
 
 var CONFIG = {
-  sheetName:      'Raw_Data',
-  finalSheetName: 'Final_Data',
-  emailTo:        'yogeshkp85@gmail.com',
-  companyName:    'Parksons Packaging Ltd',
-  timezone:       'Asia/Kolkata',
-  adminPassword:  'PKS@2026'
+  sheetName:        'Raw_Data',
+  finalSheetName:   'Final_Data',
+  emailTo:          'yogeshkp85@gmail.com',
+  companyName:      'Parksons Packaging Ltd',
+  timezone:         'Asia/Kolkata',
+  adminPassword:    'PKS@2026',
+  machineSheetName: 'Machine_Data',
+  adminUsersSheet:  'Admin_Users',
+  emailExportTo:    ['yogeshkp85@gmail.com', 'engg.cn@parksonspackaging.com']
 };
 
 // Column positions in Raw_Data (0-based: A=0, B=1...)
@@ -58,6 +61,7 @@ function onOpen() {
     .addItem('Open Live Dashboard',   'openDashboard')
     .addItem('Open Admin Panel',      'openAdminPanel')
     .addItem('Send Email Report Now', 'sendDailyEmailReport')
+    .addItem('Send Daily Data Export', 'sendDailyDataExport')
     .addSeparator()
     .addItem('Show All URLs',         'showAllUrls')
     .addItem('Test Form Submission',  'testSubmit')
@@ -159,11 +163,18 @@ function handleGetAction(params) {
   var action = params.action || '';
   var result;
   try {
-    if      (action === 'getPending')    result = getPendingEntries();
-    else if (action === 'approve')       result = approveEntry(params);
-    else if (action === 'reject')        result = rejectEntry(params);
-    else if (action === 'update')        result = updateEntry(params);
-    else if (action === 'updateApprove') result = updateAndApprove(params);
+    if      (action === 'getPending')       result = getPendingEntries();
+    else if (action === 'approve')          result = approveEntry(params);
+    else if (action === 'reject')           result = rejectEntry(params);
+    else if (action === 'update')           result = updateEntry(params);
+    else if (action === 'updateApprove')    result = updateAndApprove(params);
+    else if (action === 'getMachineData')   result = getMachineData();
+    else if (action === 'saveMachineData')  result = saveMachineData(params);
+    else if (action === 'deleteMachineData') result = deleteMachineData(params);
+    else if (action === 'loginAdmin')      result = loginAdmin(params);
+    else if (action === 'getAdminUsers')   result = getAdminUsers();
+    else if (action === 'saveAdminUser')   result = saveAdminUser(params);
+    else if (action === 'deleteAdminUser') result = deleteAdminUser(params);
     else result = { status: 'error', message: 'Unknown action: ' + action };
   } catch(err) {
     result = { status: 'error', message: err.toString() };
@@ -446,6 +457,192 @@ function writeFormSubmission(data) {
 function getRawSheet() {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetName);
 }
+function getMachineSheet() {
+  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.machineSheetName);
+}
+function getAdminUsersSheet() {
+  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.adminUsersSheet);
+}
+
+// ── MACHINE DATA ──────────────────────────────────────────────
+var MACHINES_DEFAULT = {
+  "PRINTING": {
+    "PrintKBA1": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "PrintKBA2": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "PrintKBA3": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","PU7","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "HeidelbergCX1": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","PU7","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "HeidelbergCX2": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","PU7","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "Roland": ["Feeder","PU1","PU2","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "GRAVIER": ["Feeder","PU1","Coating","Uvlights / IR light","Delivery","Compressor"],
+    "Albo": ["Comapctor","Turner","Blower"],
+    "UVcoater": ["Feeder","Infeedunit","Conveyor","Uvlights","Delivery","Coating unit"],
+    "Sheeter": ["Reelstand","Helicalcutter","Conveyor","Delivery","Suctionblower","Ductcollector"],
+    "CTP": ["Plateexposer","Plateprocessor"],
+    "Printingplant": ["Electricity Down","Compressor","Chiller water supply","Technotrans water","DG set"],
+    "Samplemaking": ["cuuting head","Travel motor","Bed","Compressor"]
+  },
+  "CORRUGATION": {
+    "Champion": ["MillRollstand","Splicer","Singlefacer","Steamsupply","Feeder","Helicalcutter","Stacker"],
+    "BHSCORRU": ["MillRollstand","Splicer","Singlefacer","Steamsupply","Feeder","Helicalcutter","Stacker"],
+    "Lamify1Old": ["Sheetfeeder","Flutefeeder","Laminationunit","Belttransfer","Stacker"],
+    "Lamify2New": ["Sheetfeeder","Flutefeeder","Laminationunit","Belttransfer","Stacker"],
+    "Gluekitchen": ["Mixing tank","Cuastic tank","supply pump"],
+    "Nflute": ["MillRollstand","Splicer","Singlefacer","Steamsupply","Feeder","Helicalcutter"]
+  },
+  "NFDIECUTTING": {
+    "Blanker1": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "Blanker2": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "BMFOIL": ["Feeder","Die platten","Delivery","Gripperbar","Foilstamping","Blanking"],
+    "BMAFOIL": ["Feeder","Die platten","Delivery","Gripperbar","Foilstamping","Blanking"],
+    "YOKO": ["Feeder","Die platten","Delivery","Gripperbar","Foilstamping","Blanking"],
+    "DIECUTTING8": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "NOVA1": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "NOVA2": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "NOVA5": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "NOVA6": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "Spanthera1": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "Spanthera2": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"]
+  },
+  "NFPASTING": {
+    "Alpina": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Expertfold": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Media68": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "VisionFold": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Fuego": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Mistral": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Blankwiser": ["Feeder","Alingmentunit","Glueunit","Folder","Delivery"],
+    "Other": ["Airalunit"]
+  },
+  "LAMINATION": {
+    "YILI": ["Feeder","Heating roller","Pressing","Knifecutter","Delivery"],
+    "SLITTER": ["Unwinder","Rewinder","Cutter","Crane motor"],
+    "PERFECTA": ["Feedingtable","CuttingKnife","Pressing","BackGauge","HydrualicPump","MainDriveClutch"],
+    "FAIDA": ["Feedingtable","CuttingKnife","Pressing","BackGauge","HydrualicPump","MainDriveClutch"]
+  },
+  "FLDIECUTTING": {
+    "NOVACUT3": ["Feeder","Dieplatten","Delivery","Gripperbar","Stripping"],
+    "NOVACUT4": ["Feeder","Dieplatten","Delivery","Gripperbar","Stripping"],
+    "SP102Diecut": ["Feeder","Dieplatten","Delivery","Gripperbar","Stripping"],
+    "SP102": ["Feeder","Dieplatten","Delivery","Gripperbar","Stripping"]
+  },
+  "FLPASTING": {
+    "LILA1": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"],
+    "LILA2": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"],
+    "PAKTEK1": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"],
+    "PAKTEK2": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"],
+    "LaminaGlueline": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"]
+  },
+  "HANDPUNCING": {
+    "ACME": ["Maindriveclutch","DiePlatten"],
+    "BHARAT": ["Maindriveclutch","DiePlatten"],
+    "HEIDO": ["Maindriveclutch","DiePlatten"],
+    "Robus": ["Sensor"],
+    "Autostrapping": ["Strapping head","Heater"]
+  },
+  "LIQUIDLINE": {
+    "Fortuna": ["Feeder","Blower","Scaving","Chiller","Burner","Folder","Transfer","Metaldetector","Tapping","Register unit"],
+    "Sheeter": ["Reelstand","Helicalcutter","Conveyor","Delivery","Suctionblower","Ductcollector"],
+    "Slitter": ["Unwinder","Rewinder","Cutter"],
+    "Blanker1": ["Feeder","Die platten","Delivery","Gripperbar","Stripping"]
+  },
+  "OTHERS": {
+    "WindowPatching1": ["Machine"],"WindowPatching2": ["Machine"],
+    "OfflineBlanker": ["Machine"],"BatchCounter": ["Machine"],
+    "AutoPrintSorting1": ["Machine"],"AutoPrintSorting2": ["Machine"],
+    "PokerCard": ["Machine"],"LablePasting1": ["Machine"],
+    "LablePasting2": ["Machine"],"LablePasting3": ["Machine"],
+    "InkmatchingMixt1": ["Machine"],"InkmatchingMixt2": ["Machine"]
+  },
+  "Convertingplant": {
+    "Compressor": ["Main compressor","Backup compressor"],
+    "Electricitydown": ["Main supply","DG Set","Transformer"]
+  },
+  "Printingplant": {
+    "Utility": ["Electricity Down","Compressor","Chiller water supply","Technotrans water","DG set"],
+    "Electricitydown": ["Main supply","DG Set"],
+    "Compressor": ["Main compressor","Backup compressor"]
+  },
+  "SCRAP": {
+    "ScrapCutting1": ["Machine"],"ScrapCutting2": ["Machine"],"ScrapCutting3": ["Machine"]
+  }
+};
+
+function seedMachineDataIfEmpty() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.machineSheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.machineSheetName);
+    sheet.getRange(1,1,1,3).setValues([['machine_type','machine_name','units']])
+      .setFontWeight('bold').setBackground('#0a0d13').setFontColor('#f0a500');
+    sheet.setFrozenRows(1);
+  }
+  if (sheet.getLastRow() > 1) return; // already seeded
+  var rows = [];
+  Object.keys(MACHINES_DEFAULT).forEach(function(type) {
+    Object.keys(MACHINES_DEFAULT[type]).forEach(function(name) {
+      rows.push([type, name, MACHINES_DEFAULT[type][name].join(',')]);
+    });
+  });
+  if (rows.length > 0) sheet.getRange(2, 1, rows.length, 3).setValues(rows);
+}
+
+function getMachineData() {
+  seedMachineDataIfEmpty();
+  var sheet = getMachineSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'success', machines: {} };
+  var data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+  var machines = {};
+  data.forEach(function(row) {
+    var type  = String(row[0] || '').trim();
+    var name  = String(row[1] || '').trim();
+    var units = String(row[2] || '').trim();
+    if (!type || !name) return;
+    if (!machines[type]) machines[type] = {};
+    machines[type][name] = units ? units.split(',').map(function(u){ return u.trim(); }) : [];
+  });
+  return { status: 'success', machines: machines };
+}
+
+function saveMachineData(params) {
+  seedMachineDataIfEmpty();
+  var sheet   = getMachineSheet();
+  var type    = String(params.machineType  || '').trim();
+  var name    = String(params.machineName  || '').trim();
+  var units   = String(params.units        || '').trim();
+  if (!type || !name) return { status: 'error', message: 'machineType and machineName required' };
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    var data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][1]).trim() === name) {
+        sheet.getRange(i + 2, 1, 1, 3).setValues([[type, name, units]]);
+        SpreadsheetApp.flush();
+        return { status: 'success' };
+      }
+    }
+  }
+  sheet.appendRow([type, name, units]);
+  SpreadsheetApp.flush();
+  return { status: 'success' };
+}
+
+function deleteMachineData(params) {
+  var sheet = getMachineSheet();
+  if (!sheet) return { status: 'error', message: 'Machine_Data sheet not found' };
+  var name    = String(params.machineName || '').trim();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'success' };
+  var data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+  for (var i = data.length - 1; i >= 0; i--) {
+    if (String(data[i][1]).trim() === name) {
+      sheet.deleteRow(i + 2);
+      SpreadsheetApp.flush();
+      return { status: 'success' };
+    }
+  }
+  return { status: 'success' };
+}
 
 function buildStatusMap() {
   var map   = {};
@@ -595,3 +792,150 @@ function sendDailyEmailReport() {
 }
 
 // Set trigger: Triggers → sendDailyEmailReport → Time-driven → Day timer → 8am–9am
+
+// ── ADMIN USERS ───────────────────────────────────────────────
+function seedAdminUsersIfEmpty() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.adminUsersSheet);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.adminUsersSheet);
+    sheet.getRange(1,1,1,4).setValues([['name','email','password','level']])
+      .setFontWeight('bold').setBackground('#0a0d13').setFontColor('#f0a500');
+    sheet.setFrozenRows(1);
+  }
+  if (sheet.getLastRow() > 1) return; // already seeded
+  sheet.appendRow(['YogeshK', 'yogeshkp85@gmail.com', 'PKS@2026', 'superadmin']);
+}
+
+function loginAdmin(params) {
+  seedAdminUsersIfEmpty();
+  var sheet = getAdminUsersSheet();
+  var level = String(params.level || '').trim().toLowerCase();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'error', message: 'Invalid credentials' };
+  var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+
+  if (level === 'supervisor') {
+    // Supervisor: password-only match against any supervisor row
+    var pwd = String(params.password || '').trim();
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][3]).trim() === 'supervisor' && String(data[i][2]).trim() === pwd) {
+        return { status: 'success', user: { name: String(data[i][0]), email: String(data[i][1]), level: 'supervisor' } };
+      }
+    }
+  } else {
+    // Superadmin: email + password match
+    var email = String(params.email || '').trim().toLowerCase();
+    var pwd2  = String(params.password || '').trim();
+    for (var j = 0; j < data.length; j++) {
+      if (String(data[j][1]).trim().toLowerCase() === email &&
+          String(data[j][2]).trim() === pwd2 &&
+          String(data[j][3]).trim() === 'superadmin') {
+        return { status: 'success', user: { name: String(data[j][0]), email: String(data[j][1]), level: 'superadmin' } };
+      }
+    }
+  }
+  return { status: 'error', message: 'Invalid credentials' };
+}
+
+function getAdminUsers() {
+  seedAdminUsersIfEmpty();
+  var sheet = getAdminUsersSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'success', users: [] };
+  var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+  var users = data.map(function(row) {
+    return { name: String(row[0]), email: String(row[1]), level: String(row[3]) };
+    // password (row[2]) intentionally omitted
+  });
+  return { status: 'success', users: users };
+}
+
+function saveAdminUser(params) {
+  seedAdminUsersIfEmpty();
+  var sheet = getAdminUsersSheet();
+  var name  = String(params.name     || '').trim();
+  var email = String(params.email    || '').trim();
+  var pwd   = String(params.password || '').trim();
+  var level = String(params.level    || 'supervisor').trim();
+  if (!name || !pwd) return { status: 'error', message: 'name and password required' };
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][1]).trim().toLowerCase() === email.toLowerCase()) {
+        sheet.getRange(i + 2, 1, 1, 4).setValues([[name, email, pwd, level]]);
+        SpreadsheetApp.flush();
+        return { status: 'success' };
+      }
+    }
+  }
+  sheet.appendRow([name, email, pwd, level]);
+  SpreadsheetApp.flush();
+  return { status: 'success' };
+}
+
+function deleteAdminUser(params) {
+  var email = String(params.email || '').trim().toLowerCase();
+  if (email === 'yogeshkp85@gmail.com') {
+    return { status: 'error', message: 'Cannot delete super admin' };
+  }
+  var sheet = getAdminUsersSheet();
+  if (!sheet) return { status: 'error', message: 'Admin_Users sheet not found' };
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'success' };
+  var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+  for (var i = data.length - 1; i >= 0; i--) {
+    if (String(data[i][1]).trim().toLowerCase() === email) {
+      sheet.deleteRow(i + 2);
+      SpreadsheetApp.flush();
+      return { status: 'success' };
+    }
+  }
+  return { status: 'success' };
+}
+
+// ── 13. DAILY CSV DATA EXPORT ─────────────────────────────────
+// Set trigger: Triggers → sendDailyDataExport → Time-driven → Day timer → 8am–9am IST
+function sendDailyDataExport() {
+  try {
+    var sheet = getRawSheet();
+    var today = Utilities.formatDate(new Date(), CONFIG.timezone, 'dd/MM/yyyy');
+    var filename = 'raw_data_' + Utilities.formatDate(new Date(), CONFIG.timezone, 'yyyyMMdd') + '.csv';
+    var subject  = 'Parksons Maintenance - Daily Data Export - ' + today;
+
+    var csvRows = [];
+    if (!sheet || sheet.getLastRow() < 1) {
+      csvRows = [['No data available']];
+    } else {
+      csvRows = sheet.getDataRange().getValues();
+    }
+
+    // Build CSV string with proper escaping
+    var csvStr = csvRows.map(function(row) {
+      return row.map(function(cell) {
+        var val = cell instanceof Date
+          ? Utilities.formatDate(cell, CONFIG.timezone, 'dd/MM/yyyy HH:mm:ss')
+          : String(cell);
+        // Escape fields containing comma, quote, or newline
+        if (val.indexOf(',') > -1 || val.indexOf('"') > -1 || val.indexOf('\n') > -1) {
+          val = '"' + val.replace(/"/g, '""') + '"';
+        }
+        return val;
+      }).join(',');
+    }).join('\n');
+
+    var blob = Utilities.newBlob(csvStr, 'text/csv', filename);
+    var recipients = CONFIG.emailExportTo.join(',');
+
+    MailApp.sendEmail({
+      to:          recipients,
+      subject:     subject,
+      body:        'Please find attached the full maintenance data export for ' + today + '.\n\nParksons Maintenance System',
+      attachments: [blob]
+    });
+    Logger.log('Daily export sent to: ' + recipients + ' | File: ' + filename);
+  } catch(err) {
+    Logger.log('sendDailyDataExport error: ' + err.toString());
+  }
+}

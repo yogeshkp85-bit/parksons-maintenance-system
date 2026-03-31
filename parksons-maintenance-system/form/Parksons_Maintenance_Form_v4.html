@@ -792,12 +792,40 @@ var CONFIG = {
 };
 
 /* ============================================================
+   FETCH MACHINE DATA FROM SHEET (with hardcoded fallback)
+   ============================================================ */
+function fetchMachineData() {
+  // Show loading state on Machine Type dropdown
+  var sel = document.getElementById('fMachineType');
+  sel.innerHTML = '<option value="">Loading machines...</option>';
+  sel.disabled = true;
+
+  fetch(SCRIPT_URL + '?action=getMachineData')
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+      if (resp.status === 'success' && resp.machines) {
+        // Override the local MACHINES variable with live data from sheet
+        MACHINES = resp.machines;
+      } else {
+        console.warn('getMachineData returned error, using fallback');
+      }
+    })
+    .catch(function(err) {
+      console.warn('fetchMachineData failed, using hardcoded fallback:', err);
+    })
+    .finally(function() {
+      sel.disabled = false;
+      populateMachineTypes();
+    });
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 window.onload = function() {
   autoFillDateTime();
   autoDetectShift();
-  populateMachineTypes();
+  fetchMachineData();
   populateConfigDropdowns();
   checkOffline();
   loadPendingQueue();

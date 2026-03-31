@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Parksons Maintenance Dashboard</title>
+<!-- Active web app (update in Code.gs DEPLOYMENT_URL): https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -46,7 +47,13 @@ body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; 
 }
 .h-title { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:19px; letter-spacing:2px; color:#fff; }
 .h-sub { font-size:10px; color:var(--muted); letter-spacing:1px; margin-top:2px; }
-.h-right { display:flex; align-items:center; gap:18px; }
+.h-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.btn-refresh {
+  background:transparent; border:1px solid var(--border); color:var(--accent);
+  padding:6px 12px; border-radius:4px; font-family:'Exo 2',sans-serif; font-size:11px;
+  font-weight:600; cursor:pointer; text-transform:uppercase; letter-spacing:1px;
+}
+.btn-refresh:hover { border-color:var(--accent); background:rgba(240,165,0,.08); }
 .live { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--green); letter-spacing:1px; text-transform:uppercase; }
 .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
@@ -192,6 +199,7 @@ tbody td { padding:8px 12px; vertical-align:middle; }
   </div>
   <div class="h-right">
     <div class="live"><div class="live-dot"></div>LIVE DATA</div>
+    <button type="button" class="btn-refresh" onclick="location.href=location.href.split('?')[0].split('#')[0]+'?page=dashboard&amp;_='+Date.now()" title="Reload latest approved data from Google Sheet">Refresh</button>
     <div class="gen-time" id="genTime"></div>
   </div>
 </header>
@@ -337,10 +345,16 @@ window.addEventListener('DOMContentLoaded', function() {
       { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
     document.getElementById('genTime').textContent    = 'Generated: ' + ts;
     document.getElementById('footerTime').textContent = 'Generated: ' + ts;
+    if (RAW && RAW.generated) {
+      var snap = 'Sheet snapshot: ' + new Date(RAW.generated).toLocaleString('en-IN');
+      document.getElementById('genTime').textContent += ' · ' + snap;
+    }
 
     populateFilters();
     applyFilters();
   }, 1400);
+  // Reload page every 5 min so KPIs match new approvals (data is baked in at load time).
+  setInterval(function() { location.reload(); }, 300000);
 });
 
 // ── POPULATE FILTERS ─────────────────────────────────────────

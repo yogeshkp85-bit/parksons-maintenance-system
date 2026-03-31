@@ -252,7 +252,19 @@ textarea.field-input { resize:vertical; min-height:56px; }
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
+// Must match Code.gs DEPLOYMENT_URL (used only if location cannot be read).
+var DEPLOY_URL_FALLBACK = 'https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec';
 var BASE_URL = '<?= baseUrl ?>';
+if (!BASE_URL || String(BASE_URL).indexOf('script.google.com') === -1) BASE_URL = DEPLOY_URL_FALLBACK;
+/** Always use THIS deployment’s /exec URL for API calls — fixes "Failed to fetch" when DEPLOYMENT_URL in Code.gs is stale. */
+(function() {
+  try {
+    var h = window.location && window.location.href;
+    if (h && h.indexOf('/exec') !== -1) {
+      BASE_URL = h.replace(/[?#].*$/, '');
+    }
+  } catch (e) {}
+})();
 var ADMIN_PWD = 'PKS@2026'; // Must match CONFIG.adminPassword in Code.gs
 
 // ── DROPDOWN OPTIONS ─────────────────────────────────────────
@@ -302,16 +314,36 @@ function showApp() {
   loadEntries();
 }
 
+// ── API URL (GET only — avoids CORS/preflight on JSON POST to Apps Script web app) ──
+function buildAdminApiUrl(payload) {
+  var act = payload.action;
+  if (act === 'getPending') return BASE_URL + '?action=getPending';
+  if (act === 'approve' || act === 'reject') {
+    return BASE_URL + '?action=' + encodeURIComponent(act) +
+      '&rowNum=' + encodeURIComponent(payload.rowNum) +
+      '&refId=' + encodeURIComponent(payload.refId || '');
+  }
+  var body = {};
+  Object.keys(payload).forEach(function(k) {
+    if (k !== 'action') body[k] = payload[k];
+  });
+  return BASE_URL + '?action=' + encodeURIComponent(act) +
+    '&payload=' + encodeURIComponent(JSON.stringify(body));
+}
+
 // ── LOAD DATA ─────────────────────────────────────────────────
 function loadEntries() {
   showLoading();
-  fetch(BASE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'getPending' })
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(data) {
+  fetch(buildAdminApiUrl({ action: 'getPending' }), { method: 'GET', cache: 'no-store' })
+  .then(function(r) { return r.text(); })
+  .then(function(text) {
+    var data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      showError('Server did not return JSON. Check deployment and that Code.gs is saved. First chars: ' + String(text).substring(0, 120));
+      return;
+    }
     if (data.status !== 'success') {
       showError('Failed to load: ' + (data.message || 'Unknown error'));
       return;
@@ -322,7 +354,7 @@ function loadEntries() {
     renderEntries();
   })
   .catch(function(e) {
-    showError('Network error: ' + e.toString());
+    showError('Network error: ' + e.toString() + ' — API base: ' + BASE_URL);
   });
 }
 
@@ -561,13 +593,11 @@ function callApi(payload, msgId, successMsg, onSuccess) {
   setMsg(msgId, '&#x23F3; Working...', '');
   disableCard(payload.rowNum, true);
 
-  fetch(BASE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(data) {
+  fetch(buildAdminApiUrl(payload), { method: 'GET', cache: 'no-store' })
+  .then(function(r){ return r.text(); })
+  .then(function(text) {
+    var data;
+    try { data = JSON.parse(text); } catch (e) { setMsg(msgId, '&#x2716; Invalid server response', 'err'); disableCard(payload.rowNum, false); return; }
     if (data.status === 'success') {
       setMsg(msgId, '&#x2714; '+successMsg, 'ok');
       if (onSuccess) onSuccess();
@@ -630,10 +660,8 @@ function approveAllPending() {
   function next() {
     if (i >= pending.length) { loadEntries(); return; }
     var e = pending[i++];
-    fetch(BASE_URL, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'approve', rowNum:e.rowNum, refId:e.refId })
-    }).then(function(){ setTimeout(next, 300); }).catch(function(){ setTimeout(next, 300); });
+    fetch(buildAdminApiUrl({ action:'approve', rowNum:e.rowNum, refId:e.refId }), { method:'GET', cache:'no-store' })
+      .then(function(){ setTimeout(next, 300); }).catch(function(){ setTimeout(next, 300); });
   }
   next();
 }

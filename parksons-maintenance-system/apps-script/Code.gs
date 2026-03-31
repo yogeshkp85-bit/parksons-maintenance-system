@@ -45,23 +45,10 @@ var COL = {
 };
 
 // ── ALWAYS USE THIS for URLs — reads live deployment URL ──────
-// ── DEPLOYMENT URL ────────────────────────────────────────────
-// UPDATE THIS after every new deployment (clasp deploy or manual)
-// Get it from: Deploy → Manage Deployments → copy the /exec URL
-var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec';
+var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec';
 
 function getBaseUrl() {
-  // Hardcoded URL is most reliable — ScriptApp.getService().getUrl()
-  // can return wrong URL when called from menu or trigger context.
-  // After each new deployment, update DEPLOYMENT_URL above.
-  if (DEPLOYMENT_URL && DEPLOYMENT_URL.indexOf('YOUR_DEPLOYMENT_ID') === -1) {
-    return DEPLOYMENT_URL;
-  }
-  try {
-    return ScriptApp.getService().getUrl();
-  } catch(e) {
-    return DEPLOYMENT_URL;
-  }
+  return DEPLOYMENT_URL;
 }
 
 // ── 1. GOOGLE SHEET MENU ─────────────────────────────────────
@@ -129,6 +116,7 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  if (params.action) return handleGetAction(params);
   if (page === 'dashboard') return serveDashboard();
   if (page === 'admin')     return serveAdmin();
 
@@ -165,6 +153,26 @@ function doPost(e) {
   }
 }
 
+
+// ── GET ACTION HANDLER (avoids CORS issues from Admin panel) ──
+function handleGetAction(params) {
+  var action = params.action || '';
+  var result;
+  try {
+    if      (action === 'getPending')    result = getPendingEntries();
+    else if (action === 'approve')       result = approveEntry(params);
+    else if (action === 'reject')        result = rejectEntry(params);
+    else if (action === 'update')        result = updateEntry(params);
+    else if (action === 'updateApprove') result = updateAndApprove(params);
+    else result = { status: 'error', message: 'Unknown action: ' + action };
+  } catch(err) {
+    result = { status: 'error', message: err.toString() };
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function jsonResp(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
@@ -175,7 +183,17 @@ function jsonResp(obj) {
 function serveDashboard() {
   try {
     var tpl = HtmlService.createTemplateFromFile('Dashboard');
-    tpl.dataJson = JSON.stringify(getDashboardData());
+    var dashData = getDashboardData();
+    try {
+      var rawS = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetName);
+      if (rawS && rawS.getLastRow() > 1) {
+        var statVals = rawS.getRange(2, COL.STATUS + 1, rawS.getLastRow() - 1, 1).getValues();
+        var pCount = statVals.filter(function(r){ return String(r[0]).trim() === 'PENDING_REVIEW'; }).length;
+        dashData.pendingCount = pCount;
+      }
+    } catch(pe) { dashData.pendingCount = 0; }
+    tpl.dataJson = JSON.stringify(dashData);
+    tpl.adminUrl = getBaseUrl() + '?page=admin';
     return tpl.evaluate()
       .setTitle('Parksons Maintenance Dashboard')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -212,9 +230,9 @@ function getDashboardData() {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return { error: null, rows: [], generated: new Date().toISOString() };
 
+  var numDataRows = Math.max(1, lastRow - 1);
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  // Rows 2 … lastRow (inclusive). Do not use lastRow-1 — that drops the newest row and breaks when only one data row exists.
-  var rawData = sheet.getRange(2, 1, lastRow, sheet.getLastColumn()).getValues();
+  var rawData = sheet.getRange(2, 1, numDataRows, sheet.getLastColumn()).getValues();
 
   var colMap = {};
   headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
@@ -229,8 +247,12 @@ function getDashboardData() {
     if (!mn && !refId) return;
 
     // Filter: only APPROVED rows appear in dashboard
-    if (refId && Object.keys(statusMap).length > 0) {
-      if ((statusMap[refId] || 'PENDING_REVIEW') !== 'APPROVED') return;
+    // If statusMap has entries, apply filter. If refId not in map, include it (legacy data)
+    if (Object.keys(statusMap).length > 0 && refId) {
+      var entryStatus = statusMap[refId];
+      // Only exclude if explicitly PENDING_REVIEW or REJECTED
+      if (entryStatus === 'PENDING_REVIEW' || entryStatus === 'REJECTED') return;
+      // If status is APPROVED or not in map at all → include in dashboard
     }
 
     var dv        = row[colMap['Date']];
@@ -238,6 +260,14 @@ function getDashboardData() {
     var monthYear = String(row[colMap['Month_Year']] || '');
     if (!monthYear && dv instanceof Date && !isNaN(dv))
       monthYear = Utilities.formatDate(dv, CONFIG.timezone, 'MMM-yy');
+    // Extra fallback: parse text date dd/MM/yyyy
+    if (!monthYear && typeof dv === 'string' && dv.match(/\d{2}\/\d{2}\/\d{4}/)) {
+      try {
+        var parts = dv.split('/');
+        var d2 = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+        if (!isNaN(d2)) monthYear = Utilities.formatDate(d2, CONFIG.timezone, 'MMM-yy');
+      } catch(e2) {}
+    }
 
     var ts = row[colMap['Time_Start']] || '';
     var te = row[colMap['Time_End']]   || '';
@@ -277,7 +307,7 @@ function getPendingEntries() {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return { status: 'success', all: [], pendingCount: 0, totalCount: 0 };
 
-  var data = sheet.getRange(2, 1, lastRow, 19).getValues();
+  var data = sheet.getRange(2, 1, lastRow - 1, 19).getValues();
   var all  = [];
 
   data.forEach(function(row, i) {
@@ -348,9 +378,8 @@ function updateAndApprove(data) {
 }
 
 function writeEdits(sheet, rowNum, data) {
-  var dateVal = data.date ? (parseDateForSheet(data.date) || data.date) : '';
   var pairs = [
-    [COL.DATE,        dateVal],
+    [COL.DATE,        parseDateSafe(data.date || ''),],
     [COL.SHIFT,       data.shift       || ''],
     [COL.MACH_TYPE,   data.machineType || ''],
     [COL.MACH_NAME,   data.machineName || ''],
@@ -384,13 +413,13 @@ function writeFormSubmission(data) {
     ('PKS-' + Utilities.formatDate(now, CONFIG.timezone, 'yyyyMMdd') + '-' +
               Utilities.formatDate(now, CONFIG.timezone, 'HHmmss'));
 
-  // Store a real Date in column C (not locale-ambiguous text) so Final_Data ARRAYFORMULA / DATEVALUE stay correct.
-  var dateForSheet = parseDateForSheet(data.date || '');
+  // Fix date: form sends YYYY-MM-DD, parse safely for IST timezone
+  var dateStr = parseDateSafe(data.date || '');
 
   sheet.appendRow([
     now,                                         // A Timestamp
     refId,                                       // B Ref_ID
-    dateForSheet,                                // C Date (Sheet date value)
+    dateStr,                                     // C Date
     data.shift        || '',                     // D Shift
     data.machineType  || '',                     // E Machine_Type
     data.machineName  || '',                     // F Machine_Name
@@ -409,7 +438,7 @@ function writeFormSubmission(data) {
     'PENDING_REVIEW'                             // S Status
   ]);
   SpreadsheetApp.flush();
-  Logger.log('Submitted: ' + refId + ' | Date: ' + (dateForSheet || '') + ' | Shift: ' + (data.shift||''));
+  Logger.log('Submitted: ' + refId + ' | Date: ' + dateStr + ' | Shift: ' + (data.shift||''));
   return { refId: refId };
 }
 
@@ -422,7 +451,7 @@ function buildStatusMap() {
   var map   = {};
   var sheet = getRawSheet();
   if (!sheet || sheet.getLastRow() < 2) return map;
-  var data  = sheet.getRange(2, 1, sheet.getLastRow(), 19).getValues();
+  var data  = sheet.getRange(2, 1, sheet.getLastRow() - 1, 19).getValues();
   data.forEach(function(row) {
     var refId = String(row[COL.REF_ID] || '').trim();
     if (refId) map[refId] = String(row[COL.STATUS] || 'PENDING_REVIEW').trim();
@@ -430,40 +459,26 @@ function buildStatusMap() {
   return map;
 }
 
-// Build a Date at calendar midnight in the script timezone (Asia/Kolkata) for Raw_Data column C.
-// Prefer this over plain text dd/MM/yyyy so linked Final_Data formulas (DATEVALUE, TEXT, etc.) stay reliable.
-function parseDateForSheet(dateStr) {
-  if (!dateStr) return '';
-  if (dateStr instanceof Date && !isNaN(dateStr)) {
-    return new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate());
-  }
-  var s = String(dateStr).trim();
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-    var p = s.split('/');
-    return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
-  }
-  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
-  try {
-    var d = new Date(s);
-    if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  } catch (e) {}
-  return '';
-}
-
-// Safely parse date string from HTML date input (YYYY-MM-DD)
-// Avoids UTC/IST timezone shift that causes "previous day" bug
+// Parse date from form (YYYY-MM-DD) → real JS Date object at midnight IST
+// Returns a Date object so Google Sheets stores it as a proper date cell
+// This ensures Final_Data ARRAYFORMULA (DATEVALUE, TEXT) works correctly
 function parseDateSafe(dateStr) {
   if (!dateStr) return '';
-  // Already formatted as dd/MM/yyyy — return as-is
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
-  // Format: YYYY-MM-DD (from HTML date input)
+  // YYYY-MM-DD from HTML date input — safest format
   var m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) return m[3] + '/' + m[2] + '/' + m[1]; // → dd/MM/yyyy (no timezone conversion)
-  // Try as Date object fallback
+  if (m) {
+    // Create date at noon IST to avoid any timezone rollover
+    return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]), 12, 0, 0);
+  }
+  // dd/MM/yyyy fallback
+  var m2 = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m2) {
+    return new Date(parseInt(m2[3]), parseInt(m2[2]) - 1, parseInt(m2[1]), 12, 0, 0);
+  }
+  // Last resort — try native parse
   try {
     var d = new Date(dateStr);
-    if (!isNaN(d)) return Utilities.formatDate(d, CONFIG.timezone, 'dd/MM/yyyy');
+    if (!isNaN(d)) return d;
   } catch(e) {}
   return dateStr;
 }

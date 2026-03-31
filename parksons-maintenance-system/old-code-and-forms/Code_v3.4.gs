@@ -1,5 +1,5 @@
 // ============================================================
-// PARKSONS MAINTENANCE SYSTEM — Code.gs (v3.2 FINAL)
+// PARKSONS MAINTENANCE SYSTEM — Code.gs (v3.4 — GET admin API, openById sheet)
 //
 // IMPORTANT — After EVERY new deployment:
 //   Run showAllUrls() from the menu to get your current URL.
@@ -11,6 +11,9 @@
 //   Dashboard.html ← dashboard template
 //   Admin.html     ← admin panel template
 // ============================================================
+
+/** Bound spreadsheet — web app uses openById so it works even when script is not container-bound. */
+var SPREADSHEET_ID = '1AT_Sil0sN5xUADNkuOz2ns01gXlawWlqyidkL4BNG7c';
 
 var CONFIG = {
   sheetName:      'Raw_Data',
@@ -45,13 +48,27 @@ var COL = {
 };
 
 // ── ALWAYS USE THIS for URLs — reads live deployment URL ──────
+// ── DEPLOYMENT URL ────────────────────────────────────────────
+// UPDATE THIS after every new deployment (clasp deploy or manual)
+// Get it from: Deploy → Manage Deployments → copy the /exec URL
+var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec';
+
 function getBaseUrl() {
+  // Hardcoded URL is most reliable — ScriptApp.getService().getUrl()
+  // can return wrong URL when called from menu or trigger context.
+  // After each new deployment, update DEPLOYMENT_URL above.
+  if (DEPLOYMENT_URL && DEPLOYMENT_URL.indexOf('YOUR_DEPLOYMENT_ID') === -1) {
+    return DEPLOYMENT_URL;
+  }
   try {
     return ScriptApp.getService().getUrl();
   } catch(e) {
-    // Fallback if called outside web context
-    return 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+    return DEPLOYMENT_URL;
   }
+}
+
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
 // ── 1. GOOGLE SHEET MENU ─────────────────────────────────────
@@ -106,8 +123,14 @@ function doGet(e) {
   var params = e && e.parameter ? e.parameter : {};
   var page   = params.page || '';
 
-  // Handle GET fallback from HTML form (payload parameter)
-  if (params.payload) {
+  // 1) Admin API (?action=…) — must run before page routing (GET, no CORS preflight)
+  if (params.action) {
+    var apiOut = handleAdminAction(params);
+    if (apiOut) return apiOut;
+  }
+
+  // 2) Technician form GET fallback (?payload=… — no action=)
+  if (params.payload && !params.action) {
     try {
       var data = JSON.parse(decodeURIComponent(params.payload));
       writeFormSubmission(data);
@@ -119,12 +142,13 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // 3) HTML pages
   if (page === 'dashboard') return serveDashboard();
   if (page === 'admin')     return serveAdmin();
 
   return ContentService
     .createTextOutput(JSON.stringify({
-      status: 'ok', version: '3.2',
+      status: 'ok', version: '3.4',
       urls: {
         dashboard: getBaseUrl() + '?page=dashboard',
         admin:     getBaseUrl() + '?page=admin'
@@ -161,6 +185,68 @@ function jsonResp(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+/** Same as jsonResp — name matches deployment docs. */
+function buildResponse(obj) {
+  return jsonResp(obj);
+}
+
+/**
+ * GET ?action=… — Admin.html uses GET only (no JSON POST / CORS preflight).
+ * Response shape matches Admin UI: { status, all, … } from getPendingEntries().
+ */
+function handleAdminAction(params) {
+  var act = String(params.action || '').trim();
+  if (!act) return null;
+
+  try {
+    if (act === 'getPending' || act === 'getAll') {
+      return jsonResp(getPendingEntries());
+    }
+    if (act === 'getApproved' || act === 'getRejected') {
+      var out = getPendingEntries();
+      if (out.status === 'success' && out.all) {
+        var want = act === 'getApproved' ? 'APPROVED' : 'REJECTED';
+        out.all = out.all.filter(function(e) {
+          return String(e.status || '').trim() === want;
+        });
+      }
+      return jsonResp(out);
+    }
+
+    if (act === 'approve') {
+      return jsonResp(approveEntry({ rowNum: params.rowNum, refId: params.refId }));
+    }
+    if (act === 'reject') {
+      return jsonResp(rejectEntry({ rowNum: params.rowNum, refId: params.refId }));
+    }
+
+    if (act === 'update' || act === 'updateApprove') {
+      if (!params.payload) return jsonResp({ status: 'error', message: 'Missing payload' });
+      var pdata = JSON.parse(decodeURIComponent(params.payload));
+      if (act === 'update') return jsonResp(updateEntry(pdata));
+      return jsonResp(updateAndApprove(pdata));
+    }
+
+    return jsonResp({ status: 'error', message: 'Unknown action: ' + act });
+  } catch (err) {
+    Logger.log('handleAdminAction: ' + err);
+    return jsonResp({ status: 'error', message: String(err) });
+  }
+}
+
+/** Find 1-based sheet row for Ref_ID in column B. Uses inclusive last row (no off-by-one). */
+function findRowByRefId(sheet, refId) {
+  if (!sheet || refId === undefined || refId === null) return null;
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+  var want = String(refId).trim();
+  var refs = sheet.getRange(2, 2, lastRow, 2).getValues();
+  for (var i = 0; i < refs.length; i++) {
+    if (String(refs[i][0]).trim() === want) return i + 2;
+  }
+  return null;
+}
+
 // ── 3. SERVE DASHBOARD ────────────────────────────────────────
 function serveDashboard() {
   try {
@@ -195,7 +281,7 @@ function serveAdmin() {
 
 // ── 5. DASHBOARD DATA — APPROVED ENTRIES ONLY ─────────────────
 function getDashboardData() {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.finalSheetName);
   if (!sheet) return { error: 'Final_Data sheet not found', rows: [] };
 
@@ -203,6 +289,7 @@ function getDashboardData() {
   if (lastRow < 2) return { error: null, rows: [], generated: new Date().toISOString() };
 
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  // Rows 2 … lastRow (inclusive). Do not use lastRow-1 — that drops the newest row and breaks when only one data row exists.
   var rawData = sheet.getRange(2, 1, lastRow, sheet.getLastColumn()).getValues();
 
   var colMap = {};
@@ -259,7 +346,7 @@ function getDashboardData() {
 
 // ── 6. GET ALL ENTRIES FOR ADMIN ──────────────────────────────
 function getPendingEntries() {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.sheetName);
   if (!sheet) return { status: 'error', message: 'Raw_Data sheet not found' };
 
@@ -337,7 +424,7 @@ function updateAndApprove(data) {
 }
 
 function writeEdits(sheet, rowNum, data) {
-  var dateVal = data.date ? (parseDateForSheet(data.date) || data.date) : '';
+  var dateVal = data.date ? parseDateSafe(data.date) : '';
   var pairs = [
     [COL.DATE,        dateVal],
     [COL.SHIFT,       data.shift       || ''],
@@ -358,13 +445,14 @@ function writeEdits(sheet, rowNum, data) {
   pairs.forEach(function(p) {
     if (p[1] !== undefined && p[1] !== '') {
       sheet.getRange(rowNum, p[0] + 1).setValue(p[1]);
+      if (p[0] === COL.DATE) sheet.getRange(rowNum, p[0] + 1).setNumberFormat('dd/mm/yyyy');
     }
   });
 }
 
 // ── 8. WRITE NEW FORM SUBMISSION ──────────────────────────────
 function writeFormSubmission(data) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.sheetName);
   if (!sheet) { sheet = ss.insertSheet(CONFIG.sheetName); setupHeaders(); }
 
@@ -373,12 +461,13 @@ function writeFormSubmission(data) {
     ('PKS-' + Utilities.formatDate(now, CONFIG.timezone, 'yyyyMMdd') + '-' +
               Utilities.formatDate(now, CONFIG.timezone, 'HHmmss'));
 
-  var dateForSheet = parseDateForSheet(data.date || '');
+  // Plain dd/MM/yyyy text for column C — matches Final_Data DATEVALUE / TEXT() ARRAYFORMULA (no UTC shift).
+  var dateStr = parseDateSafe(data.date || '');
 
   sheet.appendRow([
     now,                                         // A Timestamp
     refId,                                       // B Ref_ID
-    dateForSheet,                                // C Date (Sheet date value)
+    dateStr,                                     // C Date (text dd/MM/yyyy)
     data.shift        || '',                     // D Shift
     data.machineType  || '',                     // E Machine_Type
     data.machineName  || '',                     // F Machine_Name
@@ -396,14 +485,16 @@ function writeFormSubmission(data) {
     data.remarks      || '',                     // R Remarks
     'PENDING_REVIEW'                             // S Status
   ]);
+  var lr = sheet.getLastRow();
+  if (dateStr) sheet.getRange(lr, 3).setNumberFormat('dd/mm/yyyy');
   SpreadsheetApp.flush();
-  Logger.log('Submitted: ' + refId + ' | Date: ' + (dateForSheet || '') + ' | Shift: ' + (data.shift||''));
+  Logger.log('Submitted: ' + refId + ' | Date: ' + (dateStr || '') + ' | Shift: ' + (data.shift||''));
   return { refId: refId };
 }
 
 // ── 9. HELPERS ─────────────────────────────────────────────────
 function getRawSheet() {
-  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetName);
+  return getSpreadsheet().getSheetByName(CONFIG.sheetName);
 }
 
 function buildStatusMap() {
@@ -416,25 +507,6 @@ function buildStatusMap() {
     if (refId) map[refId] = String(row[COL.STATUS] || 'PENDING_REVIEW').trim();
   });
   return map;
-}
-
-function parseDateForSheet(dateStr) {
-  if (!dateStr) return '';
-  if (dateStr instanceof Date && !isNaN(dateStr)) {
-    return new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate());
-  }
-  var s = String(dateStr).trim();
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-    var p = s.split('/');
-    return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
-  }
-  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
-  try {
-    var d = new Date(s);
-    if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  } catch (e) {}
-  return '';
 }
 
 // Safely parse date string from HTML date input (YYYY-MM-DD)
@@ -497,7 +569,7 @@ function zp(n) { return String(n).padStart(2,'0'); }
 
 // ── 10. SETUP HEADERS ─────────────────────────────────────────
 function setupHeaders() {
-  var sheet = getRawSheet() || SpreadsheetApp.getActiveSpreadsheet().insertSheet(CONFIG.sheetName);
+  var sheet = getRawSheet() || getSpreadsheet().insertSheet(CONFIG.sheetName);
   var h = ['Timestamp','Ref_ID','Date','Shift','Machine_Type','Machine_Name','Unit',
            'Problem_Type','Category','Description','Action_Taken','Root_Cause',
            'Time_Start','Time_End','Duration_Min','Attended_By','Submitted_By','Remarks','Status'];

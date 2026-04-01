@@ -1,15 +1,5 @@
 // ============================================================
-// PARKSONS MAINTENANCE SYSTEM GÇö Code.gs (v3.2 FINAL)
-//
-// IMPORTANT GÇö After EVERY new deployment:
-//   Run showAllUrls() from the menu to get your current URL.
-//   Update SCRIPT_URL in Parksons_Maintenance_Form_v3.html
-//   to match whatever URL Apps Script gives you.
-//
-// Files needed in this project:
-//   Code.gs        GåÉ this file
-//   Dashboard.html GåÉ dashboard template
-//   Admin.html     GåÉ admin panel template
+// PARKSONS MAINTENANCE SYSTEM - Code.gs (v3.5 FINAL)
 // ============================================================
 
 var CONFIG = {
@@ -24,7 +14,6 @@ var CONFIG = {
   emailExportTo:    ['yogeshkp85@gmail.com', 'engg.cn@parksonspackaging.com']
 };
 
-// Column positions in Raw_Data (0-based: A=0, B=1...)
 var COL = {
   TIMESTAMP:    0,
   REF_ID:       1,
@@ -47,24 +36,23 @@ var COL = {
   STATUS:       18
 };
 
-// GöÇGöÇ ALWAYS USE THIS for URLs GÇö reads live deployment URL GöÇGöÇGöÇGöÇGöÇGöÇ
 var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec';
 
 function getBaseUrl() {
   return DEPLOYMENT_URL;
 }
 
-// GöÇGöÇ 1. GOOGLE SHEET MENU GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// 1. MENU
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Maintenance System')
-    .addItem('Open Live Dashboard',   'openDashboard')
-    .addItem('Open Admin Panel',      'openAdminPanel')
-    .addItem('Send Email Report Now', 'sendDailyEmailReport')
+    .addItem('Open Live Dashboard',    'openDashboard')
+    .addItem('Open Admin Panel',       'openAdminPanel')
+    .addItem('Send Email Report Now',  'sendDailyEmailReport')
     .addItem('Send Daily Data Export', 'sendDailyDataExport')
     .addSeparator()
-    .addItem('Show All URLs',         'showAllUrls')
-    .addItem('Test Form Submission',  'testSubmit')
+    .addItem('Show All URLs',          'showAllUrls')
+    .addItem('Test Form Submission',   'testSubmit')
     .addToUi();
 }
 
@@ -74,8 +62,7 @@ function openDashboard() {
     HtmlService.createHtmlOutput(
       '<script>window.open("' + url + '","_blank");google.script.host.close();<\/script>' +
       '<p style="font-family:sans-serif;padding:20px;color:#555">Opening Dashboard...</p>'
-    ), 'Opening...'
-  );
+    ), 'Opening...');
 }
 
 function openAdminPanel() {
@@ -84,40 +71,31 @@ function openAdminPanel() {
     HtmlService.createHtmlOutput(
       '<script>window.open("' + url + '","_blank");google.script.host.close();<\/script>' +
       '<p style="font-family:sans-serif;padding:20px;color:#555">Opening Admin Panel...</p>'
-    ), 'Opening...'
-  );
+    ), 'Opening...');
 }
 
 function showAllUrls() {
   var base = getBaseUrl();
   SpreadsheetApp.getUi().alert(
-    '=== PARKSONS GÇö YOUR CURRENT URLS ===\n\n' +
-    'FORM SCRIPT_URL (update in HTML form):\n' + base + '\n\n' +
+    '=== PARKSONS - YOUR CURRENT URLS ===\n\n' +
+    'FORM SCRIPT_URL:\n' + base + '\n\n' +
     'Dashboard:\n' + base + '?page=dashboard\n\n' +
     'Admin Panel:\n' + base + '?page=admin\n\n' +
-    'Admin Password: ' + CONFIG.adminPassword + '\n\n' +
-    'NOTE: Copy the FORM SCRIPT_URL above and paste it\n' +
-    'into Parksons_Maintenance_Form_v3.html replacing\n' +
-    'the old URL in the var SCRIPT_URL = "..." line.'
+    'Admin Password: ' + CONFIG.adminPassword
   );
 }
 
-// GöÇGöÇ 2. WEB APP ROUTER GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// 2. WEB APP ROUTER
 function doGet(e) {
   var params = e && e.parameter ? e.parameter : {};
   var page   = params.page || '';
 
-  // Handle GET fallback from HTML form (payload parameter)
   if (params.payload) {
     try {
       var data = JSON.parse(decodeURIComponent(params.payload));
       writeFormSubmission(data);
-    } catch(err) {
-      Logger.log('GET payload error: ' + err);
-    }
-    return ContentService
-      .createTextOutput('OK')
-      .setMimeType(ContentService.MimeType.TEXT);
+    } catch(err) { Logger.log('GET payload error: ' + err); }
+    return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
   }
 
   if (params.action) return handleGetAction(params);
@@ -126,7 +104,7 @@ function doGet(e) {
 
   return ContentService
     .createTextOutput(JSON.stringify({
-      status: 'ok', version: '3.2',
+      status: 'ok', version: '3.5',
       urls: {
         dashboard: getBaseUrl() + '?page=dashboard',
         admin:     getBaseUrl() + '?page=admin'
@@ -147,34 +125,30 @@ function doPost(e) {
     if (act === 'update')        return jsonResp(updateEntry(data));
     if (act === 'updateApprove') return jsonResp(updateAndApprove(data));
 
-    // Default: new form submission
     var result = writeFormSubmission(data);
     return jsonResp({ status: 'success', refId: result.refId });
-
   } catch(err) {
     Logger.log('doPost error: ' + err);
     return jsonResp({ status: 'error', message: err.toString() });
   }
 }
 
-
-// GöÇGöÇ GET ACTION HANDLER (avoids CORS issues from Admin panel) GöÇGöÇ
 function handleGetAction(params) {
   var action = params.action || '';
   var result;
   try {
-    if      (action === 'getPending')       result = getPendingEntries();
-    else if (action === 'approve')          result = approveEntry(params);
-    else if (action === 'reject')           result = rejectEntry(params);
-    else if (action === 'update')           result = updateEntry(params);
-    else if (action === 'updateApprove')    result = updateAndApprove(params);
-    else if (action === 'getMachineData')   result = getMachineData();
-    else if (action === 'saveMachineData')  result = saveMachineData(params);
+    if      (action === 'getPending')        result = getPendingEntries();
+    else if (action === 'approve')           result = approveEntry(params);
+    else if (action === 'reject')            result = rejectEntry(params);
+    else if (action === 'update')            result = updateEntry(params);
+    else if (action === 'updateApprove')     result = updateAndApprove(params);
+    else if (action === 'getMachineData')    result = getMachineData();
+    else if (action === 'saveMachineData')   result = saveMachineData(params);
     else if (action === 'deleteMachineData') result = deleteMachineData(params);
-    else if (action === 'loginAdmin')      result = loginAdmin(params);
-    else if (action === 'getAdminUsers')   result = getAdminUsers();
-    else if (action === 'saveAdminUser')   result = saveAdminUser(params);
-    else if (action === 'deleteAdminUser') result = deleteAdminUser(params);
+    else if (action === 'loginAdmin')        result = loginAdmin(params);
+    else if (action === 'getAdminUsers')     result = getAdminUsers();
+    else if (action === 'saveAdminUser')     result = saveAdminUser(params);
+    else if (action === 'deleteAdminUser')   result = deleteAdminUser(params);
     else result = { status: 'error', message: 'Unknown action: ' + action };
   } catch(err) {
     result = { status: 'error', message: err.toString() };
@@ -190,7 +164,7 @@ function jsonResp(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// GöÇGöÇ 3. SERVE DASHBOARD GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// 3. SERVE DASHBOARD
 function serveDashboard() {
   try {
     var tpl = HtmlService.createTemplateFromFile('Dashboard');
@@ -203,7 +177,8 @@ function serveDashboard() {
         dashData.pendingCount = pCount;
       }
     } catch(pe) { dashData.pendingCount = 0; }
-    tpl.dataJson = JSON.stringify(dashData).replace(/\n/g, " ").replace(/\r/g, "");
+    // Sanitize newlines in text fields to prevent JS injection errors
+    tpl.dataJson = JSON.stringify(dashData).replace(/\n/g, ' ').replace(/\r/g, '');
     tpl.adminUrl = getBaseUrl() + '?page=admin';
     return tpl.evaluate()
       .setTitle('Parksons Maintenance Dashboard')
@@ -216,7 +191,7 @@ function serveDashboard() {
   }
 }
 
-// GöÇGöÇ 4. SERVE ADMIN PANEL GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// 4. SERVE ADMIN PANEL
 function serveAdmin() {
   try {
     var tpl = HtmlService.createTemplateFromFile('Admin');
@@ -232,7 +207,7 @@ function serveAdmin() {
   }
 }
 
-// GöÇGöÇ 5. DASHBOARD DATA GÇö APPROVED ENTRIES ONLY GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// 5. DASHBOARD DATA
 function getDashboardData() {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.finalSheetName);
@@ -248,22 +223,17 @@ function getDashboardData() {
   var colMap = {};
   headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
 
-  // Build status lookup from Raw_Data
   var statusMap = buildStatusMap();
-
   var rows = [];
+
   rawData.forEach(function(row) {
     var mn    = String(row[colMap['Machine_Name']] || '').trim();
     var refId = String(row[colMap['Ref_ID']]       || '').trim();
     if (!mn && !refId) return;
 
-    // Filter: only APPROVED rows appear in dashboard
-    // If statusMap has entries, apply filter. If refId not in map, include it (legacy data)
     if (Object.keys(statusMap).length > 0 && refId) {
       var entryStatus = statusMap[refId];
-      // Only exclude if explicitly PENDING_REVIEW or REJECTED
       if (entryStatus === 'PENDING_REVIEW' || entryStatus === 'REJECTED') return;
-      // If status is APPROVED or not in map at all GåÆ include in dashboard
     }
 
     var dv        = row[colMap['Date']];
@@ -271,7 +241,6 @@ function getDashboardData() {
     var monthYear = String(row[colMap['Month_Year']] || '');
     if (!monthYear && dv instanceof Date && !isNaN(dv))
       monthYear = Utilities.formatDate(dv, CONFIG.timezone, 'MMM-yy');
-    // Extra fallback: parse text date dd/MM/yyyy
     if (!monthYear && typeof dv === 'string' && dv.match(/\d{2}\/\d{2}\/\d{4}/)) {
       try {
         var parts = dv.split('/');
@@ -295,7 +264,7 @@ function getDashboardData() {
       unit:        String(row[colMap['Unit']]         || ''),
       problemType: String(row[colMap['Problem_Type']] || ''),
       category:    String(row[colMap['Category']]     || ''),
-      description: String(row[colMap['Description']]  || ''),
+      description: String(row[colMap['Description']]  || '').replace(/\n/g,' ').replace(/\r/g,''),
       actionTaken: String(row[colMap['Action_Taken']] || ''),
       timeStart:   String(ts),
       timeEnd:     String(te),
@@ -309,7 +278,7 @@ function getDashboardData() {
   return { error: null, rows: rows, totalRows: rows.length, generated: new Date().toISOString() };
 }
 
-// GöÇGöÇ 6. GET ALL ENTRIES FOR ADMIN GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// 6. GET ALL ENTRIES FOR ADMIN
 function getPendingEntries() {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.sheetName);
@@ -353,13 +322,10 @@ function getPendingEntries() {
   return { status: 'success', all: all, pendingCount: pending.length, totalCount: all.length };
 }
 
-// GöÇGöÇ 7. APPROVE / REJECT / UPDATE GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-function approveEntry(data) {
-  return setStatus(data, 'APPROVED');
-}
-function rejectEntry(data) {
-  return setStatus(data, 'REJECTED');
-}
+// 7. APPROVE / REJECT / UPDATE
+function approveEntry(data) { return setStatus(data, 'APPROVED'); }
+function rejectEntry(data)  { return setStatus(data, 'REJECTED'); }
+
 function setStatus(data, statusValue) {
   var sheet  = getRawSheet();
   var rowNum = parseInt(data.rowNum, 10);
@@ -390,7 +356,7 @@ function updateAndApprove(data) {
 
 function writeEdits(sheet, rowNum, data) {
   var pairs = [
-    [COL.DATE,        parseDateSafe(data.date || ''),],
+    [COL.DATE,        parseDateSafe(data.date || '')],
     [COL.SHIFT,       data.shift       || ''],
     [COL.MACH_TYPE,   data.machineType || ''],
     [COL.MACH_NAME,   data.machineName || ''],
@@ -413,7 +379,7 @@ function writeEdits(sheet, rowNum, data) {
   });
 }
 
-// GöÇGöÇ 8. WRITE NEW FORM SUBMISSION GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// 8. WRITE NEW FORM SUBMISSION
 function writeFormSubmission(data) {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.sheetName);
@@ -424,36 +390,33 @@ function writeFormSubmission(data) {
     ('PKS-' + Utilities.formatDate(now, CONFIG.timezone, 'yyyyMMdd') + '-' +
               Utilities.formatDate(now, CONFIG.timezone, 'HHmmss'));
 
-  // Fix date: form sends YYYY-MM-DD, parse safely for IST timezone
   var dateStr = parseDateSafe(data.date || '');
 
   sheet.appendRow([
-    now,                                         // A Timestamp
-    refId,                                       // B Ref_ID
-    dateStr,                                     // C Date
-    data.shift        || '',                     // D Shift
-    data.machineType  || '',                     // E Machine_Type
-    data.machineName  || '',                     // F Machine_Name
-    data.unit         || '',                     // G Unit
-    data.problemType  || '',                     // H Problem_Type
-    data.category     || '',                     // I Category
-    data.description  || '',                     // J Description
-    data.actionTaken  || '',                     // K Action_Taken
-    data.rootCause    || '',                     // L Root_Cause
-    fmtTimeStr(data.timeStart || ''),            // M Time_Start
-    fmtTimeStr(data.timeEnd   || ''),            // N Time_End
-    data.durationMin  || '',                     // O Duration_Min
-    data.attendedBy   || '',                     // P Attended_By
-    data.submittedBy  || data.attendedBy || '',  // Q Submitted_By
-    data.remarks      || '',                     // R Remarks
-    'PENDING_REVIEW'                             // S Status
+    now, refId, dateStr,
+    data.shift        || '',
+    data.machineType  || '',
+    data.machineName  || '',
+    data.unit         || '',
+    data.problemType  || '',
+    data.category     || '',
+    data.description  || '',
+    data.actionTaken  || '',
+    data.rootCause    || '',
+    fmtTimeStr(data.timeStart || ''),
+    fmtTimeStr(data.timeEnd   || ''),
+    data.durationMin  || '',
+    data.attendedBy   || '',
+    data.submittedBy  || data.attendedBy || '',
+    data.remarks      || '',
+    'PENDING_REVIEW'
   ]);
   SpreadsheetApp.flush();
   Logger.log('Submitted: ' + refId + ' | Date: ' + dateStr + ' | Shift: ' + (data.shift||''));
   return { refId: refId };
 }
 
-// GöÇGöÇ 9. HELPERS GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// 9. HELPERS
 function getRawSheet() {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.sheetName);
 }
@@ -464,7 +427,135 @@ function getAdminUsersSheet() {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.adminUsersSheet);
 }
 
-// GöÇGöÇ MACHINE DATA GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+function buildStatusMap() {
+  var map   = {};
+  var sheet = getRawSheet();
+  if (!sheet || sheet.getLastRow() < 2) return map;
+  var data  = sheet.getRange(2, 1, sheet.getLastRow() - 1, 19).getValues();
+  data.forEach(function(row) {
+    var refId = String(row[COL.REF_ID] || '').trim();
+    if (refId) map[refId] = String(row[COL.STATUS] || 'PENDING_REVIEW').trim();
+  });
+  return map;
+}
+
+function parseDateSafe(dateStr) {
+  if (!dateStr) return '';
+  var m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]), 12, 0, 0);
+  var m2 = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m2) return new Date(parseInt(m2[3]), parseInt(m2[2]) - 1, parseInt(m2[1]), 12, 0, 0);
+  try { var d = new Date(dateStr); if (!isNaN(d)) return d; } catch(e) {}
+  return dateStr;
+}
+
+function fmtDate(v) {
+  if (!v) return '';
+  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, CONFIG.timezone, 'dd/MM/yyyy');
+  if (typeof v === 'number' && v > 0) {
+    try { return Utilities.formatDate(new Date((v-25569)*86400000), CONFIG.timezone, 'dd/MM/yyyy'); } catch(e) {}
+  }
+  return String(v);
+}
+
+function fmtTimestamp(v) {
+  if (!v) return '';
+  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, CONFIG.timezone, 'dd/MM/yyyy HH:mm');
+  return String(v);
+}
+
+function fmtTime(v) {
+  if (!v) return '';
+  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, CONFIG.timezone, 'HH:mm');
+  return String(v).replace(/^'/, '');
+}
+
+function fmtTimeStr(ts) {
+  if (!ts) return '';
+  var c = String(ts).replace(/'/g,'').trim();
+  if (c.indexOf('GMT') > -1) {
+    var m = c.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+    if (m) return "'" + zp(m[1]) + ':' + zp(m[2]) + ':' + m[3];
+  }
+  var p = c.split(':');
+  if (p.length >= 2) {
+    var h  = parseInt(p[0], 10);
+    var mm = zp(p[1]);
+    if (c.toUpperCase().indexOf('PM') > -1 && h < 12) h += 12;
+    if (c.toUpperCase().indexOf('AM') > -1 && h === 12) h = 0;
+    return "'" + zp(h) + ':' + mm + ':' + (p[2] ? p[2].replace(/\D/g,'').substring(0,2) : '00');
+  }
+  return "'" + c;
+}
+
+function zp(n) { return String(n).padStart(2,'0'); }
+
+// 10. SETUP HEADERS
+function setupHeaders() {
+  var sheet = getRawSheet() || SpreadsheetApp.getActiveSpreadsheet().insertSheet(CONFIG.sheetName);
+  var h = ['Timestamp','Ref_ID','Date','Shift','Machine_Type','Machine_Name','Unit',
+           'Problem_Type','Category','Description','Action_Taken','Root_Cause',
+           'Time_Start','Time_End','Duration_Min','Attended_By','Submitted_By','Remarks','Status'];
+  sheet.getRange(1,1,1,h.length).setValues([h])
+    .setFontWeight('bold').setBackground('#0a0d13').setFontColor('#f0a500');
+  sheet.setFrozenRows(1);
+}
+
+// 11. TEST SUBMIT
+function testSubmit() {
+  var r = writeFormSubmission({
+    date:'2026-03-28', shift:'First Shift', machineType:'PRINTING',
+    machineName:'PrintKBA1', unit:'Feeder', problemType:'Electrical',
+    category:'Breakdown', description:'Test v3.5',
+    actionTaken:'Test OK', rootCause:'Test', timeStart:'09:00:00',
+    timeEnd:'09:30:00', durationMin:30, attendedBy:'YogeshK',
+    submittedBy:'YogeshK', remarks:'v3.5 test'
+  });
+  SpreadsheetApp.getUi().alert('Test submitted! Ref: ' + r.refId);
+}
+
+// 12. EMAIL REPORT
+function sendDailyEmailReport() {
+  var data   = getDashboardData();
+  var rows   = data.rows || [];
+  var yest   = new Date(); yest.setDate(yest.getDate()-1);
+  var yStr   = Utilities.formatDate(yest, CONFIG.timezone, 'dd/MM/yyyy');
+  var yRows  = rows.filter(function(r){return r.date===yStr;});
+  var bdRows = yRows.filter(function(r){return r.category==='Breakdown';});
+  var tot    = yRows.reduce(function(s,r){return s+(r.minutes||0);},0);
+  var mttr   = bdRows.length>0 ? Math.round(bdRows.reduce(function(s,r){return s+r.minutes;},0)/bdRows.length) : 0;
+  var base   = getBaseUrl();
+  var subj   = CONFIG.companyName + ' - Daily Maintenance Report - ' +
+               Utilities.formatDate(yest, CONFIG.timezone, 'dd MMM yyyy');
+
+  var body =
+    '<div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto">' +
+    '<div style="background:#0a0d13;color:#f0a500;padding:22px 24px">' +
+    '<h2 style="margin:0;font-size:20px;letter-spacing:2px">PARKSONS MAINTENANCE REPORT</h2>' +
+    '<p style="margin:6px 0 0;color:#6b7a99;font-size:12px">' +
+      Utilities.formatDate(yest,CONFIG.timezone,'EEEE, dd MMMM yyyy') + '</p></div>' +
+    '<div style="background:#fff;padding:22px 24px;border:1px solid #e0e0e0;border-top:none">' +
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:20px">' +
+    '<tr><td style="background:#f9f9f9;padding:12px;border:1px solid #eee;font-size:12px;color:#666">Total Entries</td>' +
+    '<td style="padding:12px;border:1px solid #eee;font-weight:bold;font-size:18px;color:#2d7bf4">' + yRows.length + '</td>' +
+    '<td style="background:#f9f9f9;padding:12px;border:1px solid #eee;font-size:12px;color:#666">Breakdowns</td>' +
+    '<td style="padding:12px;border:1px solid #eee;font-weight:bold;font-size:18px;color:#e84040">' + bdRows.length + '</td></tr>' +
+    '<tr><td style="background:#f9f9f9;padding:12px;border:1px solid #eee;font-size:12px;color:#666">Total Downtime</td>' +
+    '<td style="padding:12px;border:1px solid #eee;font-weight:bold;font-size:18px">' + (tot/60).toFixed(1) + ' hrs</td>' +
+    '<td style="background:#f9f9f9;padding:12px;border:1px solid #eee;font-size:12px;color:#666">Avg MTTR</td>' +
+    '<td style="padding:12px;border:1px solid #eee;font-weight:bold;font-size:18px;color:#f0a500">' + mttr + ' min</td></tr>' +
+    '</table>' +
+    '<div style="display:flex;gap:12px">' +
+    '<a href="' + base + '?page=dashboard" style="flex:1;display:block;padding:13px;background:#0a0d13;color:#f0a500;text-align:center;text-decoration:none;font-weight:bold;font-size:13px;border-radius:5px">View Dashboard</a>' +
+    '<a href="' + base + '?page=admin" style="flex:1;display:block;padding:13px;background:#2d7bf4;color:#fff;text-align:center;text-decoration:none;font-weight:bold;font-size:13px;border-radius:5px">Open Admin Panel</a>' +
+    '</div></div></div>';
+
+  MailApp.sendEmail({to: CONFIG.emailTo, subject: subj, htmlBody: body});
+  SpreadsheetApp.getUi().alert('Email sent to ' + CONFIG.emailTo);
+}
+// Set trigger: Triggers -> sendDailyEmailReport -> Time-driven -> Day timer -> 8am-9am
+
+// MACHINE DATA
 var MACHINES_DEFAULT = {
   "PRINTING": {
     "PrintKBA1": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
@@ -576,7 +667,7 @@ function seedMachineDataIfEmpty() {
       .setFontWeight('bold').setBackground('#0a0d13').setFontColor('#f0a500');
     sheet.setFrozenRows(1);
   }
-  if (sheet.getLastRow() > 1) return; // already seeded
+  if (sheet.getLastRow() > 1) return;
   var rows = [];
   Object.keys(MACHINES_DEFAULT).forEach(function(type) {
     Object.keys(MACHINES_DEFAULT[type]).forEach(function(name) {
@@ -606,10 +697,10 @@ function getMachineData() {
 
 function saveMachineData(params) {
   seedMachineDataIfEmpty();
-  var sheet   = getMachineSheet();
-  var type    = String(params.machineType  || '').trim();
-  var name    = String(params.machineName  || '').trim();
-  var units   = String(params.units        || '').trim();
+  var sheet = getMachineSheet();
+  var type  = String(params.machineType || '').trim();
+  var name  = String(params.machineName || '').trim();
+  var units = String(params.units       || '').trim();
   if (!type || !name) return { status: 'error', message: 'machineType and machineName required' };
   var lastRow = sheet.getLastRow();
   if (lastRow > 1) {
@@ -644,156 +735,7 @@ function deleteMachineData(params) {
   return { status: 'success' };
 }
 
-function buildStatusMap() {
-  var map   = {};
-  var sheet = getRawSheet();
-  if (!sheet || sheet.getLastRow() < 2) return map;
-  var data  = sheet.getRange(2, 1, sheet.getLastRow() - 1, 19).getValues();
-  data.forEach(function(row) {
-    var refId = String(row[COL.REF_ID] || '').trim();
-    if (refId) map[refId] = String(row[COL.STATUS] || 'PENDING_REVIEW').trim();
-  });
-  return map;
-}
-
-// Parse date from form (YYYY-MM-DD) GåÆ real JS Date object at midnight IST
-// Returns a Date object so Google Sheets stores it as a proper date cell
-// This ensures Final_Data ARRAYFORMULA (DATEVALUE, TEXT) works correctly
-function parseDateSafe(dateStr) {
-  if (!dateStr) return '';
-  // YYYY-MM-DD from HTML date input GÇö safest format
-  var m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) {
-    // Create date at noon IST to avoid any timezone rollover
-    return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]), 12, 0, 0);
-  }
-  // dd/MM/yyyy fallback
-  var m2 = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m2) {
-    return new Date(parseInt(m2[3]), parseInt(m2[2]) - 1, parseInt(m2[1]), 12, 0, 0);
-  }
-  // Last resort GÇö try native parse
-  try {
-    var d = new Date(dateStr);
-    if (!isNaN(d)) return d;
-  } catch(e) {}
-  return dateStr;
-}
-
-function fmtDate(v) {
-  if (!v) return '';
-  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, CONFIG.timezone, 'dd/MM/yyyy');
-  if (typeof v === 'number' && v > 0) {
-    try { return Utilities.formatDate(new Date((v-25569)*86400000), CONFIG.timezone, 'dd/MM/yyyy'); } catch(e) {}
-  }
-  return String(v);
-}
-
-function fmtTimestamp(v) {
-  if (!v) return '';
-  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, CONFIG.timezone, 'dd/MM/yyyy HH:mm');
-  return String(v);
-}
-
-function fmtTime(v) {
-  if (!v) return '';
-  if (v instanceof Date && !isNaN(v)) return Utilities.formatDate(v, CONFIG.timezone, 'HH:mm');
-  return String(v).replace(/^'/, '');
-}
-
-function fmtTimeStr(ts) {
-  if (!ts) return '';
-  var c = String(ts).replace(/'/g,'').trim();
-  if (c.indexOf('GMT') > -1) {
-    var m = c.match(/(\d{1,2}):(\d{2}):(\d{2})/);
-    if (m) return "'" + zp(m[1]) + ':' + zp(m[2]) + ':' + m[3];
-  }
-  var p = c.split(':');
-  if (p.length >= 2) {
-    var h  = parseInt(p[0], 10);
-    var mm = zp(p[1]);
-    if (c.toUpperCase().indexOf('PM') > -1 && h < 12) h += 12;
-    if (c.toUpperCase().indexOf('AM') > -1 && h === 12) h = 0;
-    return "'" + zp(h) + ':' + mm + ':' + (p[2] ? p[2].replace(/\D/g,'').substring(0,2) : '00');
-  }
-  return "'" + c;
-}
-
-function zp(n) { return String(n).padStart(2,'0'); }
-
-// GöÇGöÇ 10. SETUP HEADERS GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-function setupHeaders() {
-  var sheet = getRawSheet() || SpreadsheetApp.getActiveSpreadsheet().insertSheet(CONFIG.sheetName);
-  var h = ['Timestamp','Ref_ID','Date','Shift','Machine_Type','Machine_Name','Unit',
-           'Problem_Type','Category','Description','Action_Taken','Root_Cause',
-           'Time_Start','Time_End','Duration_Min','Attended_By','Submitted_By','Remarks','Status'];
-  sheet.getRange(1,1,1,h.length).setValues([h])
-    .setFontWeight('bold').setBackground('#0a0d13').setFontColor('#f0a500');
-  sheet.setFrozenRows(1);
-}
-
-// GöÇGöÇ 11. TEST SUBMIT GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-function testSubmit() {
-  var r = writeFormSubmission({
-    date:'2026-03-28', shift:'First Shift', machineType:'PRINTING',
-    machineName:'PrintKBA1', unit:'Feeder', problemType:'Electrical',
-    category:'Breakdown', description:'Test v3.2 - date fix test',
-    actionTaken:'Test OK', rootCause:'Test', timeStart:'09:00:00',
-    timeEnd:'09:30:00', durationMin:30, attendedBy:'YogeshK',
-    submittedBy:'YogeshK', remarks:'v3.2 test'
-  });
-  SpreadsheetApp.getUi().alert(
-    'Test submitted! Ref: ' + r.refId +
-    '\n\nCheck Raw_Data GÇö Column C (Date) should show: 28/03/2026' +
-    '\nColumn D (Shift) should show: First Shift' +
-    '\n\nThen open Admin Panel to approve.\n\n' +
-    'Your Admin Panel URL:\n' + getBaseUrl() + '?page=admin'
-  );
-}
-
-// GöÇGöÇ 12. EMAIL REPORT GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-function sendDailyEmailReport() {
-  var data   = getDashboardData();
-  var rows   = data.rows || [];
-  var yest   = new Date(); yest.setDate(yest.getDate()-1);
-  var yStr   = Utilities.formatDate(yest, CONFIG.timezone, 'dd/MM/yyyy');
-  var yRows  = rows.filter(function(r){return r.date===yStr;});
-  var bdRows = yRows.filter(function(r){return r.category==='Breakdown';});
-  var tot    = yRows.reduce(function(s,r){return s+(r.minutes||0);},0);
-  var mttr   = bdRows.length>0 ? Math.round(bdRows.reduce(function(s,r){return s+r.minutes;},0)/bdRows.length) : 0;
-  var base   = getBaseUrl();
-  var subj   = CONFIG.companyName+' GÇö Daily Maintenance Report GÇö '+
-               Utilities.formatDate(yest,CONFIG.timezone,'dd MMM yyyy');
-
-  var body =
-    '<div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto">' +
-    '<div style="background:#0a0d13;color:#f0a500;padding:22px 24px">' +
-    '<h2 style="margin:0;font-size:20px;letter-spacing:2px">PARKSONS MAINTENANCE REPORT</h2>' +
-    '<p style="margin:6px 0 0;color:#6b7a99;font-size:12px">'+
-      Utilities.formatDate(yest,CONFIG.timezone,'EEEE, dd MMMM yyyy')+'</p></div>' +
-    '<div style="background:#fff;padding:22px 24px;border:1px solid #e0e0e0;border-top:none">' +
-    '<table style="width:100%;border-collapse:collapse;margin-bottom:20px">' +
-    '<tr><td style="background:#f9f9f9;padding:12px;border:1px solid #eee;font-size:12px;color:#666">Total Entries</td>' +
-    '<td style="padding:12px;border:1px solid #eee;font-weight:bold;font-size:18px;color:#2d7bf4">'+yRows.length+'</td>' +
-    '<td style="background:#f9f9f9;padding:12px;border:1px solid #eee;font-size:12px;color:#666">Breakdowns</td>' +
-    '<td style="padding:12px;border:1px solid #eee;font-weight:bold;font-size:18px;color:#e84040">'+bdRows.length+'</td></tr>' +
-    '<tr><td style="background:#f9f9f9;padding:12px;border:1px solid #eee;font-size:12px;color:#666">Total Downtime</td>' +
-    '<td style="padding:12px;border:1px solid #eee;font-weight:bold;font-size:18px">'+(tot/60).toFixed(1)+' hrs</td>' +
-    '<td style="background:#f9f9f9;padding:12px;border:1px solid #eee;font-size:12px;color:#666">Avg MTTR</td>' +
-    '<td style="padding:12px;border:1px solid #eee;font-weight:bold;font-size:18px;color:#f0a500">'+mttr+' min</td></tr>' +
-    '</table>' +
-    '<div style="display:flex;gap:12px">' +
-    '<a href="'+base+'?page=dashboard" style="flex:1;display:block;padding:13px;background:#0a0d13;color:#f0a500;text-align:center;text-decoration:none;font-weight:bold;font-size:13px;border-radius:5px">View Dashboard</a>' +
-    '<a href="'+base+'?page=admin" style="flex:1;display:block;padding:13px;background:#2d7bf4;color:#fff;text-align:center;text-decoration:none;font-weight:bold;font-size:13px;border-radius:5px">Open Admin Panel</a>' +
-    '</div></div></div>';
-
-  MailApp.sendEmail({to:CONFIG.emailTo, subject:subj, htmlBody:body});
-  SpreadsheetApp.getUi().alert('Email sent to '+CONFIG.emailTo);
-}
-
-// Set trigger: Triggers GåÆ sendDailyEmailReport GåÆ Time-driven GåÆ Day timer GåÆ 8amGÇô9am
-
-// GöÇGöÇ ADMIN USERS GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// ADMIN USERS
 function seedAdminUsersIfEmpty() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.adminUsersSheet);
@@ -803,7 +745,7 @@ function seedAdminUsersIfEmpty() {
       .setFontWeight('bold').setBackground('#0a0d13').setFontColor('#f0a500');
     sheet.setFrozenRows(1);
   }
-  if (sheet.getLastRow() > 1) return; // already seeded
+  if (sheet.getLastRow() > 1) return;
   sheet.appendRow(['YogeshK', 'yogeshkp85@gmail.com', 'PKS@2026', 'superadmin']);
 }
 
@@ -816,7 +758,6 @@ function loginAdmin(params) {
   var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
 
   if (level === 'supervisor') {
-    // Supervisor: password-only match against any supervisor row
     var pwd = String(params.password || '').trim();
     for (var i = 0; i < data.length; i++) {
       if (String(data[i][3]).trim() === 'supervisor' && String(data[i][2]).trim() === pwd) {
@@ -824,7 +765,6 @@ function loginAdmin(params) {
       }
     }
   } else {
-    // Superadmin: email + password match
     var email = String(params.email || '').trim().toLowerCase();
     var pwd2  = String(params.password || '').trim();
     for (var j = 0; j < data.length; j++) {
@@ -846,7 +786,6 @@ function getAdminUsers() {
   var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
   var users = data.map(function(row) {
     return { name: String(row[0]), email: String(row[1]), level: String(row[3]) };
-    // password (row[2]) intentionally omitted
   });
   return { status: 'success', users: users };
 }
@@ -895,29 +834,24 @@ function deleteAdminUser(params) {
   return { status: 'success' };
 }
 
-// GöÇGöÇ 13. DAILY CSV DATA EXPORT GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-// Set trigger: Triggers GåÆ sendDailyDataExport GåÆ Time-driven GåÆ Day timer GåÆ 8amGÇô9am IST
+// 13. DAILY CSV DATA EXPORT
+// Set trigger: Triggers -> sendDailyDataExport -> Time-driven -> Day timer -> 8am-9am IST
 function sendDailyDataExport() {
   try {
-    var sheet = getRawSheet();
-    var today = Utilities.formatDate(new Date(), CONFIG.timezone, 'dd/MM/yyyy');
+    var sheet    = getRawSheet();
+    var today    = Utilities.formatDate(new Date(), CONFIG.timezone, 'dd/MM/yyyy');
     var filename = 'raw_data_' + Utilities.formatDate(new Date(), CONFIG.timezone, 'yyyyMMdd') + '.csv';
     var subject  = 'Parksons Maintenance - Daily Data Export - ' + today;
 
-    var csvRows = [];
-    if (!sheet || sheet.getLastRow() < 1) {
-      csvRows = [['No data available']];
-    } else {
-      csvRows = sheet.getDataRange().getValues();
-    }
+    var csvRows = (!sheet || sheet.getLastRow() < 1)
+      ? [['No data available']]
+      : sheet.getDataRange().getValues();
 
-    // Build CSV string with proper escaping
     var csvStr = csvRows.map(function(row) {
       return row.map(function(cell) {
         var val = cell instanceof Date
           ? Utilities.formatDate(cell, CONFIG.timezone, 'dd/MM/yyyy HH:mm:ss')
           : String(cell);
-        // Escape fields containing comma, quote, or newline
         if (val.indexOf(',') > -1 || val.indexOf('"') > -1 || val.indexOf('\n') > -1) {
           val = '"' + val.replace(/"/g, '""') + '"';
         }
@@ -925,7 +859,7 @@ function sendDailyDataExport() {
       }).join(',');
     }).join('\n');
 
-    var blob = Utilities.newBlob(csvStr, 'text/csv', filename);
+    var blob       = Utilities.newBlob(csvStr, 'text/csv', filename);
     var recipients = CONFIG.emailExportTo.join(',');
 
     MailApp.sendEmail({

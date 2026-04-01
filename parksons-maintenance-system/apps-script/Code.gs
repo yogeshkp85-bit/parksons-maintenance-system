@@ -175,6 +175,7 @@ function handleGetAction(params) {
     else if (action === 'getAdminUsers')   result = getAdminUsers();
     else if (action === 'saveAdminUser')   result = saveAdminUser(params);
     else if (action === 'deleteAdminUser') result = deleteAdminUser(params);
+    else if (action === 'debugFinalData')  result = debugFinalData();
     else result = { status: 'error', message: 'Unknown action: ' + action };
   } catch(err) {
     result = { status: 'error', message: err.toString() };
@@ -938,4 +939,25 @@ function sendDailyDataExport() {
   } catch(err) {
     Logger.log('sendDailyDataExport error: ' + err.toString());
   }
+}
+
+// ── DEBUG: Check Final_Data headers and first row ─────────────
+function debugFinalData() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.finalSheetName);
+  if (!sheet) return { error: 'Final_Data sheet NOT FOUND' };
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 1) return { error: 'Final_Data is empty', lastRow: lastRow };
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var firstDataRow = lastRow > 1 ? sheet.getRange(2, 1, 1, lastCol).getValues()[0] : [];
+  return {
+    status: 'ok',
+    finalSheetName: CONFIG.finalSheetName,
+    lastRow: lastRow,
+    lastCol: lastCol,
+    headers: headers,
+    firstDataRow: firstDataRow,
+    dashboardData: getDashboardData()
+  };
 }

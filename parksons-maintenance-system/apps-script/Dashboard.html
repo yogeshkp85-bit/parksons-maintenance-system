@@ -326,7 +326,7 @@ tbody td { padding:8px 12px; vertical-align:middle; }
 
 <script>
 // ── DATA (injected by Apps Script template) ──────────────────
-var RAW = (function(){ try { return JSON.parse(<?= JSON.stringify(dataJson) ?>); } catch(e){ return {rows:[]}; } })();
+var RAW = <?= dataJson ?>;
 var F   = [];
 var CH  = {};
 

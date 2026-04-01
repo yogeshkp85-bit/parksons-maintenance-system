@@ -204,7 +204,10 @@ function serveDashboard() {
         dashData.pendingCount = pCount;
       }
     } catch(pe) { dashData.pendingCount = 0; }
-    tpl.dataJson = JSON.stringify(dashData).replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/<\/script>/gi, '<\\/script>');
+    var jsonStr = JSON.stringify(dashData);
+    // Sanitize: remove literal newlines inside strings that break JS injection
+    jsonStr = jsonStr.replace(/\n/g, ' ').replace(/\r/g, '');
+    tpl.dataJson = jsonStr;
     tpl.adminUrl = getBaseUrl() + '?page=admin';
     return tpl.evaluate()
       .setTitle('Parksons Maintenance Dashboard')

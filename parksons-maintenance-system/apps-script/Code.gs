@@ -107,6 +107,7 @@ function doGet(e) {
   if (params.action) return handleGetAction(params);
   if (page === 'dashboard') return serveDashboard();
   if (page === 'admin')     return serveAdmin();
+  if (page === 'kpi')       return serveKPI();
 
   return ContentService
     .createTextOutput(JSON.stringify({
@@ -195,6 +196,49 @@ function serveDashboard() {
       '<h2>Dashboard Error</h2><pre>' + err.toString() + '</pre></body>'
     );
   }
+}
+
+// 3b. SERVE KPI COMPARISON PAGE
+function serveKPI() {
+  try {
+    var tpl = HtmlService.createTemplateFromFile('KPI_Comparison');
+    tpl.kpiJson  = JSON.stringify(getHistoricalData()).replace(/\n/g,' ').replace(/\r/g,'');
+    tpl.baseUrl  = getBaseUrl();
+    return tpl.evaluate()
+      .setTitle('Parksons KPI Comparison')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  } catch(err) {
+    return HtmlService.createHtmlOutput(
+      '<body style="font-family:sans-serif;padding:40px;background:#0a0d13;color:#e84040">' +
+      '<h2>KPI Page Error</h2><pre>' + err.toString() + '</pre></body>'
+    );
+  }
+}
+
+// 3c. GET HISTORICAL KPI DATA
+function getHistoricalData() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Historical_KPI');
+  if (!sheet || sheet.getLastRow() < 2) return { rows: [] };
+  var headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  var data    = sheet.getRange(2,1,sheet.getLastRow()-1,sheet.getLastColumn()).getValues();
+  var colMap  = {};
+  headers.forEach(function(h,i){ colMap[String(h).trim()] = i; });
+  var rows = data.map(function(row){
+    return {
+      fy:           String(row[colMap['FY']]||''),
+      month:        String(row[colMap['Month']]||''),
+      machine:      String(row[colMap['Machine']]||''),
+      availTime:    parseFloat(row[colMap['Available_Time']])||34320,
+      bdTime:       parseFloat(row[colMap['Breakdown_Time']])||0,
+      bdCount:      parseInt(row[colMap['Breakdown_Count']])||0,
+      uptime:       parseFloat(row[colMap['Uptime']])||0,
+      mttr:         parseFloat(row[colMap['MTTR']])||0,
+      mtbf:         parseFloat(row[colMap['MTBF']])||0,
+      availability: parseFloat(row[colMap['Availability']])||0
+    };
+  }).filter(function(r){ return r.fy && r.month && r.machine; });
+  return { rows: rows, generated: new Date().toISOString() };
 }
 
 // 4. SERVE ADMIN PANEL

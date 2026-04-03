@@ -484,18 +484,11 @@ function showApp(user) {
 // ── API URL ───────────────────────────────────────────────────
 function buildAdminApiUrl(payload) {
   var act = payload.action;
-  if (act === 'getPending') return BASE_URL + '?action=getPending';
-  if (act === 'approve' || act === 'reject') {
-    return BASE_URL + '?action=' + encodeURIComponent(act) +
-      '&rowNum=' + encodeURIComponent(payload.rowNum) +
-      '&refId=' + encodeURIComponent(payload.refId || '');
-  }
-  var body = {};
+  var url = BASE_URL + '?action=' + encodeURIComponent(act);
   Object.keys(payload).forEach(function(k) {
-    if (k !== 'action') body[k] = payload[k];
+    if (k !== 'action') url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(payload[k] || '');
   });
-  return BASE_URL + '?action=' + encodeURIComponent(act) +
-    '&payload=' + encodeURIComponent(JSON.stringify(body));
+  return url;
 }
 
 // ── LOAD ENTRIES ──────────────────────────────────────────────
@@ -737,7 +730,9 @@ function getFields(rowNum) {
 function callApi(payload, msgId, successMsg, onSuccess) {
   setMsg(msgId, '&#x23F3; Working...', '');
   disableCard(payload.rowNum, true);
-  fetch(buildAdminApiUrl(payload), { method: 'GET', cache: 'no-store' })
+  // Encode payload as JSON in a single 'payload' param to avoid URL length issues
+  var url = BASE_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  fetch(url, { method: 'GET', cache: 'no-store' })
   .then(function(r){ return r.text(); })
   .then(function(text) {
     var data;
@@ -776,12 +771,13 @@ function rejectEntry(rowNum, refId, btn) {
 }
 function saveEdits(rowNum, refId, btn) {
   var fields = getFields(rowNum);
-  fields.action = 'updateEntry';
+  fields.action = 'update';
+  fields.refId  = refId;
   callApi(fields, 'msg_'+rowNum, 'Saved!');
 }
 function updateAndApprove(rowNum, refId, btn) {
   var fields = getFields(rowNum);
-  fields.action = 'updateAndApprove';
+  fields.action = 'updateApprove';
   fields.refId  = refId;
   callApi(fields, 'msg_'+rowNum, 'Saved & Approved!');
 }

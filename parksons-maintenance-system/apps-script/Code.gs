@@ -93,9 +93,15 @@ function doGet(e) {
   if (params.payload) {
     try {
       var data = JSON.parse(decodeURIComponent(params.payload));
-      writeFormSubmission(data);
-    } catch(err) { Logger.log('GET payload error: ' + err); }
-    return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
+      // If it has an action, route to handleGetAction
+      if (data.action) return handleGetAction(data);
+      // Otherwise treat as form submission
+      var result = writeFormSubmission(data);
+      return jsonResp({ status: 'success', refId: result.refId });
+    } catch(err) {
+      Logger.log('GET payload error: ' + err);
+      return jsonResp({ status: 'error', message: err.toString() });
+    }
   }
 
   if (params.action) return handleGetAction(params);

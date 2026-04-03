@@ -156,6 +156,7 @@ function handleGetAction(params) {
     else if (action === 'getAdminUsers')     result = getAdminUsers();
     else if (action === 'saveAdminUser')     result = saveAdminUser(params);
     else if (action === 'deleteAdminUser')   result = deleteAdminUser(params);
+    else if (action === 'getHistoricalData') result = getHistoricalData();
     else result = { status: 'error', message: 'Unknown action: ' + action };
   } catch(err) {
     result = { status: 'error', message: err.toString() };

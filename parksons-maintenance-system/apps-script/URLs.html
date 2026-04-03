@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parksons System URLs</title>
+<style>
+:root { --bg:#0a0d13; --surface:#111620; --border:#1e2a3d; --accent:#f0a500; --blue:#2d7bf4; --green:#1fc67a; --text:#d8e0ee; --muted:#6b7a99; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:32px 36px; max-width:620px; width:100%; }
+.logo { font-size:1.5rem; font-weight:700; letter-spacing:3px; color:var(--accent); margin-bottom:6px; }
+.sub { font-size:0.72rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:28px; }
+.url-item { margin-bottom:18px; }
+.url-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:6px; }
+.url-btn {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--bg); border:1px solid var(--border); border-radius:6px;
+  padding:12px 16px; text-decoration:none; color:var(--text);
+  transition:border-color .2s, background .2s; gap:10px;
+}
+.url-btn:hover { border-color:var(--accent); background:#111620; }
+.url-btn.blue:hover  { border-color:var(--blue); }
+.url-btn.green:hover { border-color:var(--green); }
+.url-name { font-weight:600; font-size:0.9rem; }
+.url-btn .icon { font-size:1.1rem; }
+.url-btn .arrow { color:var(--muted); font-size:0.8rem; }
+.url-btn.amber .url-name { color:var(--accent); }
+.url-btn.blue  .url-name { color:var(--blue); }
+.url-btn.green .url-name { color:var(--green); }
+.url-btn.purple .url-name { color:#9b5de5; }
+.divider { height:1px; background:var(--border); margin:22px 0; }
+.footer { font-size:0.65rem; color:var(--muted); text-align:center; margin-top:20px; letter-spacing:.5px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">PKS</div>
+  <div class="sub">Parksons Packaging Ltd &nbsp;·&nbsp; Maintenance System Links</div>
+
+  <div class="url-item">
+    <div class="url-label">Live Dashboard</div>
+    <a class="url-btn amber" href="https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec?page=dashboard" target="_blank">
+      <span class="icon">📊</span>
+      <span class="url-name">Maintenance Dashboard</span>
+      <span class="arrow">↗ Open</span>
+    </a>
+  </div>
+
+  <div class="url-item">
+    <div class="url-label">Admin Panel</div>
+    <a class="url-btn blue" href="https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec?page=admin" target="_blank">
+      <span class="icon">⚙️</span>
+      <span class="url-name">Admin &amp; Approval Panel</span>
+      <span class="arrow">↗ Open</span>
+    </a>
+  </div>
+
+  <div class="url-item">
+    <div class="url-label">KPI Comparison Dashboard</div>
+    <a class="url-btn green" href="https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec?page=kpi" target="_blank">
+      <span class="icon">📈</span>
+      <span class="url-name">3-Year KPI Comparison (Printing)</span>
+      <span class="arrow">↗ Open</span>
+    </a>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="url-item">
+    <div class="url-label">Maintenance Entry Form</div>
+    <a class="url-btn purple" href="https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec" target="_blank">
+      <span class="icon">📝</span>
+      <span class="url-name">Submit Maintenance Entry</span>
+      <span class="arrow">↗ Open</span>
+    </a>
+  </div>
+</div>
+<div class="footer">Parksons Packaging Ltd &nbsp;·&nbsp; Maintenance Intelligence System</div>
+</body>
+</html>

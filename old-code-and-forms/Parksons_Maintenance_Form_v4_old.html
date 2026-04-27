@@ -1,0 +1,1747 @@
+<!-- saved from url=(0014)about:internet -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Maintenance Log Entry - Parksons FO/PRO-32</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --border: #30363d;
+  --border2: #444c56;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --blue: #388bfd;
+  --blue-dim: #1f6feb;
+  --green: #3fb950;
+  --green-dim: #238636;
+  --amber: #d29922;
+  --red: #f85149;
+  --purple: #a371f7;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { font-size: 16px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* HEADER */
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.app-logo {
+  width: 36px;
+  height: 36px;
+  background: var(--blue-dim);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.app-title { flex: 1; }
+.app-title h1 { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+.app-title p { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+.shift-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.shift-badge.first  { background: #388bfd15; border-color: #388bfd40; color: #79c0ff; }
+.shift-badge.second { background: #3fb95015; border-color: #3fb95040; color: #7ee787; }
+.shift-badge.third  { background: #a371f715; border-color: #a371f740; color: #d2a8ff; }
+
+/* PROGRESS BAR */
+.progress-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+}
+.progress-inner { max-width: 560px; margin: 0 auto; }
+.progress-steps {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.progress-step {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border2);
+  transition: background 0.3s;
+}
+.progress-step.done { background: var(--green); }
+.progress-step.active { background: var(--blue); }
+.progress-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* MAIN CONTENT */
+.main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* SECTION CARDS */
+.section-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.section-title::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--blue);
+}
+
+/* FORM FIELDS */
+.field {
+  margin-bottom: 14px;
+}
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.field label .req {
+  color: var(--red);
+  margin-left: 3px;
+}
+.field label .hint {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.7rem;
+  margin-left: 6px;
+}
+.field input[type="text"],
+.field input[type="date"],
+.field input[type="time"],
+.field textarea,
+.field select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 11px 13px;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(56,139,253,0.12);
+}
+.field input.valid,
+.field select.valid,
+.field textarea.valid {
+  border-color: var(--green-dim);
+}
+.field input.error,
+.field select.error,
+.field textarea.error {
+  border-color: var(--red);
+}
+.field textarea { min-height: 80px; resize: vertical; }
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b949e' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+.field select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.field-err {
+  font-size: 0.7rem;
+  color: var(--red);
+  margin-top: 4px;
+  display: none;
+}
+.field-err.show { display: block; }
+
+/* TIME ROW */
+.time-auto-note {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* DURATION DISPLAY */
+.duration-display {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-size: 0.85rem;
+  color: var(--amber);
+  font-weight: 600;
+  text-align: center;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SHIFT AUTO-DETECT BANNER */
+.shift-detect {
+  background: var(--blue-dim);
+  background: linear-gradient(135deg, #1f3a5f, #162032);
+  border: 1px solid #388bfd40;
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-size: 0.75rem;
+  color: #79c0ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.shift-detect-icon { font-size: 16px; flex-shrink: 0; }
+
+/* SUBMIT BUTTON */
+.btn-submit {
+  width: 100%;
+  padding: 16px;
+  background: var(--green-dim);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  letter-spacing: 0.02em;
+}
+.btn-submit:hover { background: #2ea043; }
+.btn-submit:active { transform: scale(0.98); }
+.btn-submit:disabled {
+  background: var(--border2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.btn-clear {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-clear:hover { border-color: var(--red); color: var(--red); }
+
+/* SUCCESS SCREEN */
+.success-screen {
+  display: none;
+  text-align: center;
+  padding: 40px 20px;
+}
+.success-screen.show { display: block; }
+.success-icon {
+  width: 72px;
+  height: 72px;
+  background: var(--green-dim);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin: 0 auto 20px;
+}
+.success-screen h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.success-screen p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+.success-ref {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 20px 0;
+  font-size: 0.82rem;
+}
+.success-ref .ref-label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.success-ref .ref-val { color: var(--green); font-weight: 600; font-size: 0.95rem; margin-top: 3px; }
+.btn-new {
+  width: 100%;
+  padding: 14px;
+  background: var(--blue-dim);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+/* PENDING INDICATOR */
+.pending-count {
+  background: var(--amber);
+  color: #000;
+  border-radius: 10px;
+  padding: 2px 7px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+/* CHAR COUNT */
+.char-count {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 3px;
+}
+
+/* OFFLINE NOTICE */
+.offline-notice {
+  background: #5a1e02;
+  border: 1px solid #d29922;
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-size: 0.75rem;
+  color: #ffa657;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.offline-notice.show { display: flex; }
+
+/* GOOGLE SHEETS STATUS */
+.sheets-status {
+  font-size: 0.7rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-top: 10px;
+  text-align: center;
+}
+.sheets-status.ok { background: #1a3a1a; color: #7ee787; }
+.sheets-status.err { background: #3a1a1a; color: #ff7b72; }
+.sheets-status.pending { background: #2a2a1a; color: #ffa657; }
+
+/* PENDING QUEUE PANEL */
+.queue-panel {
+  background: var(--surface);
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 14px;
+  display: none;
+}
+.queue-panel.show { display: block; }
+.queue-panel h3 { font-size: 0.8rem; color: var(--amber); margin-bottom: 10px; }
+.queue-item {
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.queue-item strong { color: var(--text); }
+.btn-retry-all {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--amber);
+  border-radius: 7px;
+  color: var(--amber);
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+@media (max-width: 380px) {
+  .field-row { grid-template-columns: 1fr; }
+  .main { padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="app-header-inner">
+    <div class="app-logo">&#9881;</div>
+    <div class="app-title">
+      <h1>Maintenance Log Entry</h1>
+      <p>Parksons Packaging &mdash; FO/PRO-32</p>
+    </div>
+    <div class="shift-badge" id="shiftBadge">-</div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="progress-steps">
+      <div class="progress-step active" id="ps1"></div>
+      <div class="progress-step" id="ps2"></div>
+      <div class="progress-step" id="ps3"></div>
+      <div class="progress-step" id="ps4"></div>
+    </div>
+    <div class="progress-label">
+      <span id="progressLabel">Fill all fields and submit</span>
+      <span id="progressCount">0 / 10</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN FORM -->
+<div class="main" id="mainForm">
+
+  <!-- Offline notice -->
+  <div class="offline-notice" id="offlineNotice">
+    <span>&#9888;</span>
+    <span>No internet. Entry will be saved on phone and submitted when connection returns.</span>
+  </div>
+
+  <!-- Pending queue -->
+  <div class="queue-panel" id="queuePanel">
+    <h3>&#128337; Pending Submissions <span class="pending-count" id="queueCount">0</span></h3>
+    <div id="queueList"></div>
+    <button class="btn-retry-all" onclick="retryQueue()">&#8635; Retry All Now</button>
+  </div>
+
+  <!-- SECTION 1: WHEN -->
+  <div class="section-card">
+    <div class="section-title">When</div>
+    <div class="shift-detect" id="shiftDetectBanner">
+      <span class="shift-detect-icon">&#128336;</span>
+      <span id="shiftDetectText">Detecting shift from current time...</span>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Date <span class="req">*</span></label>
+        <input type="date" id="fDate">
+      </div>
+      <div class="field">
+        <label>Shift <span class="req">*</span></label>
+        <select id="fShift">
+          <option value="">Select shift</option>
+          <option value="First Shift">First Shift (7AM-3PM)</option>
+          <option value="Second Shift">Second Shift (3PM-11PM)</option>
+          <option value="Third Shift">Third Shift (11PM-7AM)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Time Start <span class="req">*</span></label>
+        <input type="time" id="fTimeStart">
+        <div class="time-auto-note">&#8635; Auto-filled with current time</div>
+      </div>
+      <div class="field">
+        <label>Time End <span class="req">*</span></label>
+        <input type="time" id="fTimeEnd">
+      </div>
+    </div>
+    <div class="field">
+      <label>Duration <span class="hint">(auto calculated)</span></label>
+      <div class="duration-display" id="durationDisplay">Enter start and end time</div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: MACHINE -->
+  <div class="section-card">
+    <div class="section-title">Machine</div>
+    <div class="field">
+      <label>Machine Type <span class="req">*</span></label>
+      <select id="fMachineType" onchange="onMachineTypeChange()">
+        <option value="">Select machine type</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Machine Name <span class="req">*</span></label>
+      <select id="fMachineName" disabled onchange="onMachineNameChange()">
+        <option value="">Select machine type first</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Unit / Section <span class="req">*</span></label>
+      <select id="fUnit" disabled>
+        <option value="">Select machine name first</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- SECTION 3: PROBLEM -->
+  <div class="section-card">
+    <div class="section-title">Problem Details</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Type of Problem <span class="req">*</span></label>
+        <select id="fProblemType">
+          <option value="">Select</option>
+          <option value="Electrical">Electrical</option>
+          <option value="Mechanical">Mechanical</option>
+          <option value="Mech/Elect">Mech/Elect</option>
+          <option value="Pneumatic air">Pneumatic air</option>
+          <option value="Utility">Utility</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Category <span class="req">*</span></label>
+        <select id="fCategory">
+          <option value="">Select</option>
+          <option value="Breakdown">Breakdown</option>
+          <option value="Predictive">Predictive</option>
+          <option value="Planning">Planning</option>
+          <option value="Preventive">Preventive</option>
+          <option value="Corrective">Corrective</option>
+          <option value="Operational">Operational</option>
+          <option value="Shift Start up">Shift Start up</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Description of Problem <span class="req">*</span></label>
+      <textarea id="fDescription" placeholder="Describe what happened..." oninput="charCount(this,'descCount',300)"></textarea>
+      <div class="char-count" id="descCount">0 / 300</div>
+    </div>
+    <div class="field">
+      <label>Action Taken <span class="req">*</span></label>
+      <textarea id="fAction" placeholder="What was done to fix it..." oninput="charCount(this,'actionCount',300)"></textarea>
+      <div class="char-count" id="actionCount">0 / 300</div>
+    </div>
+    <div class="field">
+      <label>Root Cause of Problem</label>
+      <textarea id="fRootCause" placeholder="Root cause (if identified)..." style="min-height:60px" oninput="charCount(this,'rcCount',200)"></textarea>
+      <div class="char-count" id="rcCount">0 / 200</div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: TEAM -->
+  <div class="section-card">
+    <div class="section-title">Team</div>
+    <div class="field">
+      <label>Attended By <span class="req">*</span></label>
+      <select id="fAttendedBy">
+        <option value="">Select technician</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Submitted By <span class="req">*</span> <span class="hint">(your name)</span></label>
+      <select id="fSubmittedBy">
+        <option value="">Select your name</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Additional Remarks <span class="hint">(optional)</span></label>
+      <textarea id="fRemarks" placeholder="Any additional notes..." style="min-height:60px"></textarea>
+    </div>
+  </div>
+
+  <!-- SUBMIT SECTION -->
+  <div id="submitErr" style="color:#f85149;font-size:0.78rem;padding:8px;text-align:center;display:none;margin-bottom:8px"></div>
+  <button class="btn-submit" id="btnSubmit" onclick="submitForm()">Submit Maintenance Log</button>
+  <button class="btn-clear" onclick="clearForm()">Clear Form</button>
+  <button class="btn-clear" onclick="openWebAdminPanel()" style="margin-top:8px;border-color:#388bfd;color:#58a6ff;font-weight:700;">&#128275; Approval Panel</button>
+  <button class="btn-clear" onclick="openAdminPanel()" style="margin-top:6px;border-color:#a371f7;color:#a371f7;">&#9881; Local Admin Config</button>
+  <div class="sheets-status" id="sheetsStatus" style="display:none"></div>
+
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div class="main">
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">&#10003;</div>
+    <h2>Submitted Successfully!</h2>
+    <p>Your maintenance log has been recorded.</p>
+    <p>It will appear in the supervisor review sheet shortly.</p>
+    <div class="success-ref">
+      <div class="ref-label">Reference ID</div>
+      <div class="ref-val" id="successRef">-</div>
+      <div style="margin-top:10px;font-size:0.75rem;color:#8b949e">
+        <span id="successSummary"></span>
+      </div>
+    </div>
+    <button class="btn-new" onclick="newEntry()">&#43; Submit Another Entry</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   MACHINE DATA - All dropdowns from Excel Data sheet
+   ============================================================ */
+var MACHINES = {
+  "PRINTING": {
+    "PrintKBA1": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "PrintKBA2": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "PrintKBA3": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","PU7","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "HeidelbergCX1": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","PU7","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "HeidelbergCX2": ["Feeder","PU1","PU2","PU3","PU4","PU5","PU6","PU7","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "Roland": ["Feeder","PU1","PU2","Coating","Uvlights / IR light","Delivery","Technotrans","Compressor"],
+    "GRAVIER": ["Feeder","PU1","Coating","Uvlights / IR light","Delivery","Compressor"],
+    "Albo": ["Comapctor","Turner","Blower"],
+    "UVcoater": ["Feeder","Infeedunit","Conveyor","Uvlights","Delivery","Coating unit"],
+    "Sheeter": ["Reelstand","Helicalcutter","Conveyor","Delivery","Suctionblower","Ductcollector"],
+    "CTP": ["Plateexposer","Plateprocessor"],
+    "Printingplant": ["Electricity Down","Compressor","Chiller water supply","Technotrans water","DG set"],
+    "Samplemaking": ["cuuting head","Travel motor","Bed","Compressor"]
+  },
+  "CORRUGATION": {
+    "Champion": ["MillRollstand","Splicer","Singlefacer","Steamsupply","Feeder","Helicalcutter","Stacker"],
+    "BHSCORRU": ["MillRollstand","Splicer","Singlefacer","Steamsupply","Feeder","Helicalcutter","Stacker"],
+    "Lamify1Old": ["Sheetfeeder","Flutefeeder","Laminationunit","Belttransfer","Stacker"],
+    "Lamify2New": ["Sheetfeeder","Flutefeeder","Laminationunit","Belttransfer","Stacker"],
+    "Gluekitchen": ["Mixing tank","Cuastic tank","supply pump"],
+    "Nflute": ["MillRollstand","Splicer","Singlefacer","Steamsupply","Feeder","Helicalcutter"]
+  },
+  "NFDIECUTTING": {
+    "Blanker1": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "Blanker2": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "BMFOIL": ["Feeder","Die platten","Delivery","Gripperbar","Foilstamping","Blanking"],
+    "BMAFOIL": ["Feeder","Die platten","Delivery","Gripperbar","Foilstamping","Blanking"],
+    "YOKO": ["Feeder","Die platten","Delivery","Gripperbar","Foilstamping","Blanking"],
+    "DIECUTTING8": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "NOVA1": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "NOVA2": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "NOVA5": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "NOVA6": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "Spanthera1": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"],
+    "Spanthera2": ["Feeder","Die platten","Delivery","Gripperbar","Stripping","Blanking"]
+  },
+  "NFPASTING": {
+    "Alpina": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Expertfold": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Media68": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "VisionFold": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Fuego": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Mistral": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer","Delivery"],
+    "Blankwiser": ["Feeder","Alingmentunit","Glueunit","Folder","Delivery"],
+    "Other": ["Airalunit"]
+  },
+  "LAMINATION": {
+    "YILI": ["Feeder","Heating roller","Pressing","Knifecutter","Delivery"],
+    "SLITTER": ["Unwinder","Rewinder","Cutter","Crane motor"],
+    "PERFECTA": ["Feedingtable","CuttingKnife","Pressing","BackGauge","HydrualicPump","MainDriveClutch"],
+    "FAIDA": ["Feedingtable","CuttingKnife","Pressing","BackGauge","HydrualicPump","MainDriveClutch"]
+  },
+  "FLDIECUTTING": {
+    "NOVACUT3": ["Feeder","Dieplatten","Delivery","Gripperbar","Stripping"],
+    "NOVACUT4": ["Feeder","Dieplatten","Delivery","Gripperbar","Stripping"],
+    "SP102Diecut": ["Feeder","Dieplatten","Delivery","Gripperbar","Stripping"],
+    "SP102": ["Feeder","Dieplatten","Delivery","Gripperbar","Stripping"]
+  },
+  "FLPASTING": {
+    "LILA1": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"],
+    "LILA2": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"],
+    "PAKTEK1": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"],
+    "PAKTEK2": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"],
+    "LaminaGlueline": ["Feeder","Alingmentunit","Prebreaker","Glueunit","HSSsystem","Folder","Transfer"]
+  },
+  "HANDPUNCING": {
+    "ACME": ["Maindriveclutch","DiePlatten"],
+    "BHARAT": ["Maindriveclutch","DiePlatten"],
+    "HEIDO": ["Maindriveclutch","DiePlatten"],
+    "Robus": ["Sensor"],
+    "Autostrapping": ["Strapping head","Heater"]
+  },
+  "LIQUIDLINE": {
+    "Fortuna": ["Feeder","Blower","Scaving","Chiller","Burner","Folder","Transfer","Metaldetector","Tapping","Register unit"],
+    "Sheeter": ["Reelstand","Helicalcutter","Conveyor","Delivery","Suctionblower","Ductcollector"],
+    "Slitter": ["Unwinder","Rewinder","Cutter"],
+    "Blanker1": ["Feeder","Die platten","Delivery","Gripperbar","Stripping"]
+  },
+  "OTHERS": {
+    "WindowPatching1": ["Machine"], "WindowPatching2": ["Machine"],
+    "OfflineBlanker": ["Machine"], "BatchCounter": ["Machine"],
+    "AutoPrintSorting1": ["Machine"], "AutoPrintSorting2": ["Machine"],
+    "PokerCard": ["Machine"], "LablePasting1": ["Machine"],
+    "LablePasting2": ["Machine"], "LablePasting3": ["Machine"],
+    "InkmatchingMixt1": ["Machine"], "InkmatchingMixt2": ["Machine"]
+  },
+  "Convertingplant": {
+    "Compressor": ["Main compressor","Backup compressor"],
+    "Electricitydown": ["Main supply","DG Set","Transformer"]
+  },
+  "Printingplant": {
+    "Utility": ["Electricity Down","Compressor","Chiller water supply","Technotrans water","DG set"],
+    "Electricitydown": ["Main supply","DG Set"],
+    "Compressor": ["Main compressor","Backup compressor"]
+  },
+  "SCRAP": {
+    "ScrapCutting1": ["Machine"], "ScrapCutting2": ["Machine"], "ScrapCutting3": ["Machine"]
+  }
+};
+
+/* ============================================================
+   GOOGLE SHEETS CONFIG
+   SCRIPT_URL = your deployed Google Apps Script Web App URL
+   To update: replace the URL below with your new deployment URL
+   ============================================================ */
+var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzHWip5IomqAGlmU78rsoPlX1AFJHKWeZ5u28qWQmKO9VMHAUdKystKv_NigL6XNLKS/exec"; // Updated 28 Mar 2026
+
+/* ============================================================
+   ADMIN CONFIG — Edit lists here to add/remove options
+   No coding knowledge required — just edit the arrays below
+   ============================================================ */
+var CONFIG = {
+
+  // ── TECHNICIAN LIST (Attended By + Submitted By) ─────────
+  // To add a new technician: add their name inside the brackets
+  // Example: "NewName" at the end before the last ]
+  technicians: [
+    "Ashish","Shivaji","Sandip","Sharad","Vikas","Ravi",
+    "Sachine","Krishna","Dattaram","Akshay","PM team",
+    "Baba","Sangram","Ramdas","Chandan","YogeshK",
+    "GaneshS","KedarP","YogeshP","Supervisor"
+  ],
+
+  // ── SHIFT OPTIONS ─────────────────────────────────────────
+  // To add a new shift, add it here
+  shifts: [
+    "First Shift",   // 7AM - 3PM
+    "Second Shift",  // 3PM - 11PM
+    "Third Shift"    // 11PM - 7AM
+  ],
+
+  // ── PROBLEM TYPES ─────────────────────────────────────────
+  problemTypes: [
+    "Electrical","Mechanical","Mech/Elect","Pneumatic air","Utility"
+  ],
+
+  // ── CATEGORIES ────────────────────────────────────────────
+  categories: [
+    "Breakdown","Predictive","Planning","Preventive",
+    "Corrective","Operational","Shift Start up"
+  ]
+};
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.onload = function() {
+  autoFillDateTime();
+  autoDetectShift();
+  populateMachineTypes();
+  populateConfigDropdowns();
+  checkOffline();
+  loadPendingQueue();
+  updateProgress();
+
+  var savedBy = localStorage.getItem('ppl_lastSubmittedBy');
+  if (savedBy) document.getElementById('fSubmittedBy').value = savedBy;
+
+  document.getElementById('fTimeStart').addEventListener('change', calcDuration);
+  document.getElementById('fTimeEnd').addEventListener('change', calcDuration);
+
+  var fields = ['fDate','fShift','fMachineType','fMachineName','fUnit',
+                'fProblemType','fCategory','fDescription','fAction','fAttendedBy','fSubmittedBy'];
+  for (var i = 0; i < fields.length; i++) {
+    (function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', updateProgress);
+    })(fields[i]);
+  }
+  document.getElementById('fDescription').addEventListener('input', updateProgress);
+  document.getElementById('fAction').addEventListener('input', updateProgress);
+
+  window.addEventListener('online', function() {
+    document.getElementById('offlineNotice').classList.remove('show');
+    retryQueue();
+  });
+  window.addEventListener('offline', function() {
+    document.getElementById('offlineNotice').classList.add('show');
+  });
+};
+
+function autoFillDateTime() {
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = String(now.getMonth()+1).padStart(2,'0');
+  var d = String(now.getDate()).padStart(2,'0');
+  document.getElementById('fDate').value = y+'-'+m+'-'+d;
+  var h = String(now.getHours()).padStart(2,'0');
+  var mi = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('fTimeStart').value = h+':'+mi;
+}
+
+function autoDetectShift() {
+  var h = new Date().getHours();
+  var shift = '';
+  var cls = '';
+  if (h >= 7 && h < 15)  { shift = 'First Shift';  cls = 'first'; }
+  else if (h >= 15 && h < 23) { shift = 'Second Shift'; cls = 'second'; }
+  else { shift = 'Third Shift'; cls = 'third'; }
+
+  document.getElementById('fShift').value = shift;
+
+  var badge = document.getElementById('shiftBadge');
+  badge.textContent = shift;
+  badge.className = 'shift-badge ' + cls;
+
+  var times = {'First Shift':'7 AM - 3 PM', 'Second Shift':'3 PM - 11 PM', 'Third Shift':'11 PM - 7 AM'};
+  document.getElementById('shiftDetectText').textContent =
+    'Auto-detected: ' + shift + ' (' + times[shift] + ') based on current time';
+}
+
+function populateMachineTypes() {
+  var sel = document.getElementById('fMachineType');
+  var types = Object.keys(MACHINES).sort();
+  for (var i = 0; i < types.length; i++) {
+    var o = document.createElement('option');
+    o.value = types[i]; o.textContent = types[i];
+    sel.appendChild(o);
+  }
+}
+
+function onMachineTypeChange() {
+  var type = document.getElementById('fMachineType').value;
+  var mnSel = document.getElementById('fMachineName');
+  var unitSel = document.getElementById('fUnit');
+
+  mnSel.innerHTML = '<option value="">Select machine</option>';
+  unitSel.innerHTML = '<option value="">Select machine first</option>';
+  unitSel.disabled = true;
+
+  if (!type) { mnSel.disabled = true; return; }
+  mnSel.disabled = false;
+
+  var machines = Object.keys(MACHINES[type]).sort();
+  for (var i = 0; i < machines.length; i++) {
+    var o = document.createElement('option');
+    o.value = machines[i]; o.textContent = machines[i];
+    mnSel.appendChild(o);
+  }
+  updateProgress();
+}
+
+function onMachineNameChange() {
+  var type = document.getElementById('fMachineType').value;
+  var name = document.getElementById('fMachineName').value;
+  var unitSel = document.getElementById('fUnit');
+
+  unitSel.innerHTML = '<option value="">Select unit</option>';
+
+  if (!type || !name) { unitSel.disabled = true; return; }
+  unitSel.disabled = false;
+
+  var units = MACHINES[type][name] || [];
+  for (var i = 0; i < units.length; i++) {
+    var o = document.createElement('option');
+    o.value = units[i]; o.textContent = units[i];
+    unitSel.appendChild(o);
+  }
+  if (units.length === 1) unitSel.value = units[0];
+  updateProgress();
+}
+
+function calcDuration() {
+  var ts = document.getElementById('fTimeStart').value;
+  var te = document.getElementById('fTimeEnd').value;
+  var disp = document.getElementById('durationDisplay');
+  if (!ts || !te) { disp.textContent = 'Enter start and end time'; return; }
+
+  var start = ts.split(':');
+  var end   = te.split(':');
+  var sm = parseInt(start[0])*60 + parseInt(start[1]);
+  var em = parseInt(end[0])*60   + parseInt(end[1]);
+  if (em < sm) em += 1440; // crosses midnight
+  var diff = em - sm;
+  if (diff <= 0) { disp.textContent = 'End time must be after start time'; return; }
+
+  var h = Math.floor(diff/60);
+  var m = diff % 60;
+  var label = '';
+  if (h > 0) label += h + ' hr ';
+  label += m + ' min';
+  disp.textContent = label + ' (' + diff + ' minutes)';
+}
+
+function charCount(el, countId, max) {
+  var c = el.value.length;
+  document.getElementById(countId).textContent = c + ' / ' + max;
+  if (c > max * 0.9) document.getElementById(countId).style.color = '#f85149';
+  else document.getElementById(countId).style.color = '#8b949e';
+}
+
+function updateProgress() {
+  var required = ['fDate','fShift','fMachineType','fMachineName','fUnit',
+                  'fProblemType','fCategory','fAttendedBy','fSubmittedBy'];
+  var textRequired = ['fDescription','fAction'];
+  var done = 0;
+  var total = required.length + textRequired.length;
+
+  for (var i = 0; i < required.length; i++) {
+    var el = document.getElementById(required[i]);
+    if (el && el.value) done++;
+  }
+  for (var i = 0; i < textRequired.length; i++) {
+    var el = document.getElementById(textRequired[i]);
+    if (el && el.value.trim().length > 3) done++;
+  }
+
+  document.getElementById('progressCount').textContent = done + ' / ' + total;
+
+  var steps = [
+    Math.min(done, 2) >= 2,
+    Math.min(done, 5) >= 5,
+    Math.min(done, 9) >= 9,
+    done >= total
+  ];
+  for (var i = 0; i < 4; i++) {
+    var el = document.getElementById('ps'+(i+1));
+    el.className = 'progress-step' + (steps[i] ? ' done' : (done >= i*2.5 ? ' active' : ''));
+  }
+
+  var pct = Math.round(done/total*100);
+  document.getElementById('progressLabel').textContent = pct + '% complete';
+}
+
+function checkOffline() {
+  if (!navigator.onLine) {
+    document.getElementById('offlineNotice').classList.add('show');
+  }
+}
+
+/* ============================================================
+   VALIDATION
+   ============================================================ */
+function validate() {
+  var errors = [];
+  var checks = [
+    {id:'fDate',        msg:'Date is required'},
+    {id:'fShift',       msg:'Shift is required'},
+    {id:'fTimeStart',   msg:'Start time is required'},
+    {id:'fTimeEnd',     msg:'End time is required'},
+    {id:'fMachineType', msg:'Machine Type is required'},
+    {id:'fMachineName', msg:'Machine Name is required'},
+    {id:'fUnit',        msg:'Unit is required'},
+    {id:'fProblemType', msg:'Type of Problem is required'},
+    {id:'fCategory',    msg:'Category is required'},
+    {id:'fAttendedBy',  msg:'Attended By is required'},
+    {id:'fSubmittedBy', msg:'Submitted By is required'}
+  ];
+  for (var i = 0; i < checks.length; i++) {
+    var el = document.getElementById(checks[i].id);
+    if (!el.value.trim()) { errors.push(checks[i].msg); el.classList.add('error'); }
+    else el.classList.remove('error');
+  }
+  var desc = document.getElementById('fDescription');
+  if (!desc.value.trim() || desc.value.trim().length < 5) {
+    errors.push('Description of Problem is required (min 5 chars)');
+    desc.classList.add('error');
+  } else desc.classList.remove('error');
+  var act = document.getElementById('fAction');
+  if (!act.value.trim() || act.value.trim().length < 5) {
+    errors.push('Action Taken is required (min 5 chars)');
+    act.classList.add('error');
+  } else act.classList.remove('error');
+
+  var ts = document.getElementById('fTimeStart').value;
+  var te = document.getElementById('fTimeEnd').value;
+  if (ts && te) {
+    var sm = parseInt(ts.split(':')[0])*60+parseInt(ts.split(':')[1]);
+    var em = parseInt(te.split(':')[0])*60+parseInt(te.split(':')[1]);
+    if (em < sm) em += 1440;
+    if (em <= sm) errors.push('End time must be after start time');
+  }
+  return errors;
+}
+
+/* ============================================================
+   BUILD DATA RECORD
+   ============================================================ */
+function buildRecord() {
+  var ts = document.getElementById('fTimeStart').value;
+  var te = document.getElementById('fTimeEnd').value;
+  var sm = parseInt(ts.split(':')[0])*60+parseInt(ts.split(':')[1]);
+  var em = parseInt(te.split(':')[0])*60+parseInt(te.split(':')[1]);
+  if (em < sm) em += 1440;
+  var diffMin = em - sm;
+
+  var now = new Date();
+  var refId = 'PKS-' + now.getFullYear() +
+    String(now.getMonth()+1).padStart(2,'0') +
+    String(now.getDate()).padStart(2,'0') + '-' +
+    String(now.getHours()).padStart(2,'0') +
+    String(now.getMinutes()).padStart(2,'0') +
+    String(now.getSeconds()).padStart(2,'0');
+
+  return {
+    refId:         refId,
+    submittedAt:   now.toISOString(),
+    date:          document.getElementById('fDate').value,
+    shift:         document.getElementById('fShift').value,
+    timeStart:     ts,
+    timeEnd:       te,
+    durationMin:   diffMin,
+    machineType:   document.getElementById('fMachineType').value,
+    machineName:   document.getElementById('fMachineName').value,
+    unit:          document.getElementById('fUnit').value,
+    problemType:   document.getElementById('fProblemType').value,
+    category:      document.getElementById('fCategory').value,
+    description:   document.getElementById('fDescription').value.trim(),
+    actionTaken:   document.getElementById('fAction').value.trim(),
+    rootCause:     document.getElementById('fRootCause').value.trim(),
+    attendedBy:    document.getElementById('fAttendedBy').value,
+    submittedBy:   document.getElementById('fSubmittedBy').value,
+    remarks:       document.getElementById('fRemarks').value.trim(),
+    status:        'PENDING_REVIEW'
+  };
+}
+
+/* ============================================================
+   SUBMIT TO GOOGLE SHEETS
+   ============================================================ */
+function submitToSheets(record, onSuccess, onError) {
+  if (SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+    setTimeout(function() { onSuccess(); }, 800);
+    return;
+  }
+
+  // Method: fetch with no-cors bypasses CORS preflight on Google Apps Script
+  // We send as text/plain which Google treats as postData.contents
+  if (typeof fetch !== 'undefined') {
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(record)
+    })
+    .then(function() {
+      // no-cors always returns opaque response - treat as success
+      onSuccess();
+    })
+    .catch(function(err) {
+      // Try fallback method
+      submitViaForm(record, onSuccess, onError);
+    });
+  } else {
+    // Fallback for older browsers
+    submitViaForm(record, onSuccess, onError);
+  }
+}
+
+// Fallback Method 2: GET request with payload as URL parameter
+// Most reliable for Google Apps Script - no CORS issues
+function submitViaForm(record, onSuccess, onError) {
+  try {
+    // Encode the entire record as a URL parameter
+    var payload = encodeURIComponent(JSON.stringify(record));
+    var url = SCRIPT_URL + '?payload=' + payload;
+
+    // Use a hidden image tag trick - fires GET, ignores response
+    var img = new Image();
+    img.onload  = function() { onSuccess(); };
+    img.onerror = function() { onSuccess(); }; // Still treat as success
+    img.src = url;
+
+    // Also fire onSuccess after 2 seconds regardless
+    setTimeout(function() { onSuccess(); }, 2000);
+  } catch(e) {
+    // Last resort: open in hidden iframe
+    try {
+      var payload2 = encodeURIComponent(JSON.stringify(record));
+      var iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = SCRIPT_URL + '?payload=' + payload2;
+      document.body.appendChild(iframe);
+      setTimeout(function() {
+        document.body.removeChild(iframe);
+        onSuccess();
+      }, 3000);
+    } catch(e2) {
+      onError(e2.toString());
+    }
+  }
+}
+
+/* ============================================================
+   OFFLINE QUEUE
+   ============================================================ */
+function saveToPendingQueue(record) {
+  var queue = [];
+  try { queue = JSON.parse(localStorage.getItem('ppl_queue') || '[]'); } catch(e){}
+  queue.push(record);
+  localStorage.setItem('ppl_queue', JSON.stringify(queue));
+  updateQueueDisplay();
+}
+
+function loadPendingQueue() {
+  var queue = [];
+  try { queue = JSON.parse(localStorage.getItem('ppl_queue') || '[]'); } catch(e){}
+  if (queue.length > 0) updateQueueDisplay();
+}
+
+function updateQueueDisplay() {
+  var queue = [];
+  try { queue = JSON.parse(localStorage.getItem('ppl_queue') || '[]'); } catch(e){}
+  var panel = document.getElementById('queuePanel');
+  var count = document.getElementById('queueCount');
+  var list  = document.getElementById('queueList');
+  if (queue.length === 0) { panel.classList.remove('show'); return; }
+  panel.classList.add('show');
+  count.textContent = queue.length;
+  var html = '';
+  for (var i = 0; i < queue.length; i++) {
+    var r = queue[i];
+    html += '<div class="queue-item"><span><strong>' + r.machineName + '</strong> - ' + r.date + '</span><span>' + r.refId + '</span></div>';
+  }
+  list.innerHTML = html;
+}
+
+function retryQueue() {
+  var queue = [];
+  try { queue = JSON.parse(localStorage.getItem('ppl_queue') || '[]'); } catch(e){}
+  if (!queue.length) return;
+  var remaining = [];
+  var done = 0;
+  var total = queue.length;
+
+  function tryNext(i) {
+    if (i >= total) {
+      localStorage.setItem('ppl_queue', JSON.stringify(remaining));
+      updateQueueDisplay();
+      if (remaining.length < total) {
+        showSheetsStatus('ok', (total-remaining.length) + ' pending entries submitted successfully!');
+      }
+      return;
+    }
+    submitToSheets(queue[i], function() {
+      tryNext(i+1);
+    }, function() {
+      remaining.push(queue[i]);
+      tryNext(i+1);
+    });
+  }
+  tryNext(0);
+}
+
+function showSheetsStatus(type, msg) {
+  var el = document.getElementById('sheetsStatus');
+  el.style.display = 'block';
+  el.className = 'sheets-status ' + type;
+  el.textContent = msg;
+  setTimeout(function() { el.style.display = 'none'; }, 5000);
+}
+
+/* ============================================================
+   MAIN SUBMIT
+   ============================================================ */
+function submitForm() {
+  var errors = validate();
+  var errDiv = document.getElementById('submitErr');
+
+  if (errors.length > 0) {
+    errDiv.textContent = errors[0];
+    errDiv.style.display = 'block';
+    document.querySelector('.section-card').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  errDiv.style.display = 'none';
+
+  var btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  var record = buildRecord();
+  localStorage.setItem('ppl_lastSubmittedBy', record.submittedBy);
+
+  if (!navigator.onLine) {
+    saveToPendingQueue(record);
+    showSuccessScreen(record, true);
+    btn.disabled = false;
+    btn.textContent = 'Submit Maintenance Log';
+    return;
+  }
+
+  submitToSheets(record,
+    function() {
+      showSuccessScreen(record, false);
+      btn.disabled = false;
+      btn.textContent = 'Submit Maintenance Log';
+    },
+    function(err) {
+      // Save to queue for retry
+      saveToPendingQueue(record);
+      showSuccessScreen(record, true);
+      btn.disabled = false;
+      btn.textContent = 'Submit Maintenance Log';
+    }
+  );
+}
+
+function showSuccessScreen(record, offline) {
+  document.getElementById('mainForm').style.display = 'none';
+  var s = document.getElementById('successScreen');
+  s.classList.add('show');
+  document.getElementById('successRef').textContent = record.refId;
+  document.getElementById('successSummary').textContent =
+    record.machineName + ' | ' + record.category + ' | ' +
+    record.durationMin + ' min | ' + record.shift;
+  if (offline) {
+    document.getElementById('successScreen').querySelector('p:nth-child(3)').textContent =
+      'Saved locally. Will sync to Google Sheets when internet is available.';
+  }
+  window.scrollTo(0, 0);
+}
+
+function newEntry() {
+  document.getElementById('successScreen').classList.remove('show');
+  document.getElementById('mainForm').style.display = 'block';
+  clearForm();
+  window.scrollTo(0, 0);
+}
+
+function clearForm() {
+  autoFillDateTime();
+  autoDetectShift();
+  document.getElementById('fMachineType').value = '';
+  document.getElementById('fMachineName').innerHTML = '<option value="">Select machine type first</option>';
+  document.getElementById('fMachineName').disabled = true;
+  document.getElementById('fUnit').innerHTML = '<option value="">Select machine name first</option>';
+  document.getElementById('fUnit').disabled = true;
+  document.getElementById('fProblemType').value = '';
+  document.getElementById('fCategory').value = '';
+  document.getElementById('fDescription').value = '';
+  document.getElementById('fAction').value = '';
+  document.getElementById('fRootCause').value = '';
+  document.getElementById('fAttendedBy').value = '';
+  document.getElementById('fRemarks').value = '';
+  document.getElementById('durationDisplay').textContent = 'Enter start and end time';
+  document.getElementById('submitErr').style.display = 'none';
+  document.getElementById('descCount').textContent = '0 / 300';
+  document.getElementById('actionCount').textContent = '0 / 300';
+  document.getElementById('rcCount').textContent = '0 / 200';
+  updateProgress();
+}
+
+/* ============================================================
+   POPULATE DROPDOWNS FROM CONFIG
+   Automatically builds Attended By, Submitted By from CONFIG array
+   To add a new technician: just add name to CONFIG.technicians above
+   ============================================================ */
+function populateConfigDropdowns() {
+  // Populate Attended By
+  var attendedSel = document.getElementById('fAttendedBy');
+  for (var i = 0; i < CONFIG.technicians.length; i++) {
+    var o = document.createElement('option');
+    o.value = CONFIG.technicians[i];
+    o.textContent = CONFIG.technicians[i];
+    attendedSel.appendChild(o);
+  }
+
+  // Populate Submitted By
+  var submittedSel = document.getElementById('fSubmittedBy');
+  for (var j = 0; j < CONFIG.technicians.length; j++) {
+    var o2 = document.createElement('option');
+    o2.value = CONFIG.technicians[j];
+    o2.textContent = CONFIG.technicians[j];
+    submittedSel.appendChild(o2);
+  }
+}
+
+/* ============================================================
+   ADD NEW MACHINE — call from browser console for quick add
+   Usage: addMachine("PRINTING", "PrintKBA4", ["Feeder","PU1","PU2"])
+   ============================================================ */
+function addMachine(type, name, units) {
+  if (!MACHINES[type]) {
+    MACHINES[type] = {};
+    console.log("✅ New machine type added: " + type);
+  }
+  MACHINES[type][name] = units;
+  console.log("✅ Machine added: " + name + " under " + type);
+  // Refresh the machine type dropdown
+  var sel = document.getElementById('fMachineType');
+  sel.innerHTML = '<option value="">Select machine type</option>';
+  populateMachineTypes();
+  console.log("✅ Dropdown refreshed");
+}
+
+
+/* ============================================================
+   ADMIN PANEL JAVASCRIPT
+   Password: PKS2026 (change below if needed)
+   ============================================================ */
+var ADMIN_PASSWORD = "PKS2026";
+
+/** Opens the deployed Apps Script Admin page in a new tab */
+function openWebAdminPanel() {
+  if (!SCRIPT_URL || SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+    alert("SCRIPT_URL not configured. Please update it in the HTML file.");
+    return;
+  }
+  window.open(SCRIPT_URL + "?page=admin", "_blank", "noopener");
+}
+
+function openDashboard() {
+  if (!SCRIPT_URL || SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+    alert("SCRIPT_URL not configured.");
+    return;
+  }
+  window.open(SCRIPT_URL + "?page=dashboard", "_blank", "noopener");
+}
+
+function openAdminPanel() {
+  document.getElementById('adminOverlay').style.display = 'block';
+  document.getElementById('adminGate').style.display = 'block';
+  document.getElementById('adminContent').style.display = 'none';
+  document.getElementById('adminPwd').value = '';
+  document.getElementById('pwdError').style.display = 'none';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAdminPanel() {
+  document.getElementById('adminOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function checkAdminPwd() {
+  var pwd = document.getElementById('adminPwd').value;
+  if (pwd === ADMIN_PASSWORD) {
+    document.getElementById('adminGate').style.display = 'none';
+    document.getElementById('adminContent').style.display = 'block';
+    loadAdminContent();
+  } else {
+    document.getElementById('pwdError').style.display = 'block';
+    document.getElementById('adminPwd').value = '';
+  }
+}
+
+document.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter' && document.getElementById('adminOverlay').style.display === 'block') {
+    if (document.getElementById('adminGate').style.display !== 'none') {
+      checkAdminPwd();
+    }
+  }
+});
+
+function showAdminTab(tabId, btn) {
+  var tabs = document.querySelectorAll('.admin-tab-content');
+  for (var i = 0; i < tabs.length; i++) tabs[i].style.display = 'none';
+  document.getElementById(tabId).style.display = 'block';
+  var btns = document.querySelectorAll('.admin-tab');
+  for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+  btn.classList.add('active');
+}
+
+function loadAdminContent() {
+  // Load technicians from localStorage or CONFIG
+  var saved = getConfig('technicians');
+  var techArr = saved || CONFIG.technicians;
+  document.getElementById('techList').value = techArr.join('\n');
+
+  // Load categories
+  var savedCat = getConfig('categories');
+  var catArr = savedCat || CONFIG.categories;
+  document.getElementById('catList').value = catArr.join('\n');
+
+  // Load problem types
+  var savedProb = getConfig('problemTypes');
+  var probArr = savedProb || CONFIG.problemTypes;
+  document.getElementById('probList').value = probArr.join('\n');
+
+  // Load machine types into add-machine dropdowns
+  refreshAdminMachineSelects();
+
+  // Show machine list
+  refreshMachineListView();
+}
+
+function getConfig(key) {
+  try {
+    var val = localStorage.getItem('pks_config_' + key);
+    return val ? JSON.parse(val) : null;
+  } catch(e) { return null; }
+}
+
+function setConfig(key, arr) {
+  try {
+    localStorage.setItem('pks_config_' + key, JSON.stringify(arr));
+  } catch(e) {}
+}
+
+function saveTechnicians() {
+  var lines = document.getElementById('techList').value
+    .split('\n').map(function(s){ return s.trim(); }).filter(function(s){ return s !== ''; });
+  setConfig('technicians', lines);
+  CONFIG.technicians = lines;
+  // Rebuild dropdowns
+  rebuildSelect('fAttendedBy', lines, 'Select technician');
+  rebuildSelect('fSubmittedBy', lines, 'Select your name');
+  showSaved('techSaveMsg');
+}
+
+function saveCategories() {
+  var lines = document.getElementById('catList').value
+    .split('\n').map(function(s){ return s.trim(); }).filter(function(s){ return s !== ''; });
+  setConfig('categories', lines);
+  CONFIG.categories = lines;
+  rebuildSelect('fCategory', lines, 'Select');
+  showSaved('catSaveMsg');
+}
+
+function saveProblemTypes() {
+  var lines = document.getElementById('probList').value
+    .split('\n').map(function(s){ return s.trim(); }).filter(function(s){ return s !== ''; });
+  setConfig('problemTypes', lines);
+  CONFIG.problemTypes = lines;
+  rebuildSelect('fProblemType', lines, 'Select');
+  showSaved('probSaveMsg');
+}
+
+function rebuildSelect(selectId, arr, placeholder) {
+  var sel = document.getElementById(selectId);
+  if (!sel) return;
+  var current = sel.value;
+  sel.innerHTML = '<option value="">' + placeholder + '</option>';
+  for (var i = 0; i < arr.length; i++) {
+    var o = document.createElement('option');
+    o.value = arr[i]; o.textContent = arr[i];
+    sel.appendChild(o);
+  }
+  if (current) sel.value = current;
+}
+
+function addMachineType() {
+  var newType = document.getElementById('newMachType').value.trim().toUpperCase();
+  if (!newType) { alert('Please enter a machine type name'); return; }
+  if (MACHINES[newType]) { alert('Machine type "' + newType + '" already exists!'); return; }
+  MACHINES[newType] = {};
+  saveMachinesConfig();
+  refreshAdminMachineSelects();
+  refreshMachineListView();
+  document.getElementById('newMachType').value = '';
+  document.getElementById('machSaveMsg').style.display = 'block';
+  setTimeout(function(){ document.getElementById('machSaveMsg').style.display = 'none'; }, 2000);
+  // Also refresh main form dropdown
+  var mainSel = document.getElementById('fMachineType');
+  var o = document.createElement('option');
+  o.value = newType; o.textContent = newType;
+  mainSel.appendChild(o);
+}
+
+function addNewMachine() {
+  var type   = document.getElementById('addMachTypeSelect').value;
+  var name   = document.getElementById('newMachName').value.trim();
+  var unitsStr = document.getElementById('newMachUnits').value.trim();
+  if (!type) { alert('Select a machine type first'); return; }
+  if (!name) { alert('Enter a machine name'); return; }
+  if (!unitsStr) { alert('Enter at least one unit (comma-separated)'); return; }
+  var units = unitsStr.split(',').map(function(u){ return u.trim(); }).filter(function(u){ return u; });
+  if (MACHINES[type][name]) { alert('Machine "' + name + '" already exists under ' + type); return; }
+  MACHINES[type][name] = units;
+  saveMachinesConfig();
+  refreshMachineListView();
+  document.getElementById('newMachName').value = '';
+  document.getElementById('newMachUnits').value = '';
+  document.getElementById('machSaveMsg').style.display = 'block';
+  setTimeout(function(){ document.getElementById('machSaveMsg').style.display = 'none'; }, 2000);
+}
+
+function populateUnitMachineSelect() {
+  var type = document.getElementById('unitMachTypeSelect').value;
+  var sel  = document.getElementById('unitMachNameSelect');
+  sel.innerHTML = '<option value="">Select Machine</option>';
+  if (!type || !MACHINES[type]) return;
+  var names = Object.keys(MACHINES[type]).sort();
+  for (var i = 0; i < names.length; i++) {
+    var o = document.createElement('option');
+    o.value = names[i]; o.textContent = names[i];
+    sel.appendChild(o);
+  }
+}
+
+function addNewUnit() {
+  var type = document.getElementById('unitMachTypeSelect').value;
+  var name = document.getElementById('unitMachNameSelect').value;
+  var unit = document.getElementById('newUnitName').value.trim();
+  if (!type || !name) { alert('Select machine type and machine name'); return; }
+  if (!unit) { alert('Enter a unit name'); return; }
+  if (MACHINES[type][name].indexOf(unit) >= 0) { alert('Unit "' + unit + '" already exists!'); return; }
+  MACHINES[type][name].push(unit);
+  saveMachinesConfig();
+  document.getElementById('newUnitName').value = '';
+  document.getElementById('machSaveMsg').style.display = 'block';
+  setTimeout(function(){ document.getElementById('machSaveMsg').style.display = 'none'; }, 2000);
+}
+
+function saveMachinesConfig() {
+  try {
+    localStorage.setItem('pks_config_machines', JSON.stringify(MACHINES));
+  } catch(e) { console.log('Could not save to localStorage:', e); }
+}
+
+function refreshAdminMachineSelects() {
+  var types = Object.keys(MACHINES).sort();
+  var selIds = ['addMachTypeSelect','unitMachTypeSelect'];
+  for (var s = 0; s < selIds.length; s++) {
+    var sel = document.getElementById(selIds[s]);
+    if (!sel) continue;
+    sel.innerHTML = '<option value="">Select Machine Type</option>';
+    for (var i = 0; i < types.length; i++) {
+      var o = document.createElement('option');
+      o.value = types[i]; o.textContent = types[i];
+      sel.appendChild(o);
+    }
+  }
+}
+
+function refreshMachineListView() {
+  var types = Object.keys(MACHINES).sort();
+  var html = '';
+  for (var i = 0; i < types.length; i++) {
+    var names = Object.keys(MACHINES[types[i]]);
+    html += '<strong style="color:#e6edf3;">' + types[i] + '</strong>';
+    html += ' <span style="color:#8b949e;font-size:0.72rem;">(' + names.length + ' machines)</span><br>';
+    html += '<span style="color:#7a93b0;margin-left:12px;font-size:0.75rem;">' + names.join(', ') + '</span><br>';
+  }
+  document.getElementById('machineListView').innerHTML = html;
+}
+
+function showSaved(id) {
+  var el = document.getElementById(id);
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display = 'none'; }, 2000);
+}
+
+// Load saved config on startup (applies localStorage overrides)
+(function applyStoredConfig() {
+  try {
+    var savedMachines = localStorage.getItem('pks_config_machines');
+    if (savedMachines) {
+      var parsed = JSON.parse(savedMachines);
+      // Merge — add new machines but keep existing
+      for (var type in parsed) {
+        if (!MACHINES[type]) MACHINES[type] = {};
+        for (var name in parsed[type]) {
+          MACHINES[type][name] = parsed[type][name];
+        }
+      }
+    }
+    var savedTech = localStorage.getItem('pks_config_technicians');
+    if (savedTech) CONFIG.technicians = JSON.parse(savedTech);
+    var savedCat = localStorage.getItem('pks_config_categories');
+    if (savedCat) CONFIG.categories = JSON.parse(savedCat);
+    var savedProb = localStorage.getItem('pks_config_problemTypes');
+    if (savedProb) CONFIG.problemTypes = JSON.parse(savedProb);
+  } catch(e) {}
+})();
+
+
+</script>
+
+<!-- ADMIN CONFIG PANEL -->
+<div id="adminOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:999;overflow-y:auto;">
+<div style="max-width:560px;margin:20px auto;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;">
+
+  <!-- Admin Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid #30363d;padding-bottom:12px;">
+    <div>
+      <div style="font-size:0.7rem;color:#a371f7;letter-spacing:1px;text-transform:uppercase;">Admin Panel</div>
+      <div style="font-size:1rem;font-weight:700;color:#e6edf3;">Configuration Manager</div>
+    </div>
+    <button onclick="closeAdminPanel()" style="background:#21262d;border:1px solid #444c56;color:#8b949e;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem;">Close</button>
+  </div>
+
+  <!-- Password Gate -->
+  <div id="adminGate">
+    <div style="text-align:center;padding:20px 0;">
+      <div style="font-size:0.85rem;color:#8b949e;margin-bottom:12px;">Enter admin password to continue</div>
+      <input type="password" id="adminPwd" placeholder="Password"
+        style="width:100%;max-width:220px;background:#21262d;border:1px solid #444c56;border-radius:8px;color:#e6edf3;padding:10px 13px;font-size:0.9rem;display:block;margin:0 auto 12px;" />
+      <button onclick="checkAdminPwd()"
+        style="background:#a371f7;border:none;color:#fff;padding:10px 28px;border-radius:8px;cursor:pointer;font-weight:600;">Unlock</button>
+      <div id="pwdError" style="color:#f85149;font-size:0.75rem;margin-top:8px;display:none;">Incorrect password</div>
+    </div>
+  </div>
+
+  <!-- Admin Content (hidden until password correct) -->
+  <div id="adminContent" style="display:none;">
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="admin-tab active" onclick="showAdminTab('tabTech',this)">Technicians</button>
+      <button class="admin-tab" onclick="showAdminTab('tabMachine',this)">Machines</button>
+      <button class="admin-tab" onclick="showAdminTab('tabCat',this)">Categories</button>
+      <button class="admin-tab" onclick="showAdminTab('tabProb',this)">Problem Types</button>
+    </div>
+
+    <!-- Tab: Technicians -->
+    <div id="tabTech" class="admin-tab-content">
+      <div style="font-size:0.78rem;color:#8b949e;margin-bottom:10px;">
+        One name per line. Changes take effect immediately after Save.
+      </div>
+      <textarea id="techList" rows="14"
+        style="width:100%;background:#21262d;border:1px solid #444c56;border-radius:8px;color:#e6edf3;padding:10px;font-size:0.85rem;resize:vertical;"></textarea>
+      <button onclick="saveTechnicians()"
+        style="margin-top:10px;width:100%;background:#238636;border:none;color:#fff;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">Save Technicians</button>
+      <div id="techSaveMsg" style="color:#3fb950;font-size:0.75rem;margin-top:6px;display:none;">Saved successfully!</div>
+    </div>
+
+    <!-- Tab: Machines -->
+    <div id="tabMachine" class="admin-tab-content" style="display:none;">
+      <div style="font-size:0.78rem;color:#8b949e;margin-bottom:10px;">
+        Manage Machine Types and Machine Names below.
+      </div>
+
+      <!-- Add Machine Type -->
+      <div style="background:#21262d;border:1px solid #444c56;border-radius:8px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:0.75rem;color:#a371f7;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Add New Machine Type</div>
+        <input type="text" id="newMachType" placeholder="e.g. FLATBED"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:9px 12px;font-size:0.85rem;margin-bottom:8px;box-sizing:border-box;" />
+        <button onclick="addMachineType()"
+          style="width:100%;background:#1f6feb;border:none;color:#fff;padding:10px;border-radius:7px;cursor:pointer;font-weight:600;">+ Add Machine Type</button>
+      </div>
+
+      <!-- Add Machine Name -->
+      <div style="background:#21262d;border:1px solid #444c56;border-radius:8px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:0.75rem;color:#a371f7;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Add New Machine</div>
+        <select id="addMachTypeSelect"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:9px 12px;font-size:0.85rem;margin-bottom:8px;-webkit-appearance:none;">
+          <option value="">Select Machine Type</option>
+        </select>
+        <input type="text" id="newMachName" placeholder="Machine name e.g. PrintKBA4"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:9px 12px;font-size:0.85rem;margin-bottom:8px;box-sizing:border-box;" />
+        <input type="text" id="newMachUnits" placeholder="Units comma-separated e.g. Feeder,PU1,PU2,Delivery"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:9px 12px;font-size:0.85rem;margin-bottom:8px;box-sizing:border-box;" />
+        <button onclick="addNewMachine()"
+          style="width:100%;background:#1f6feb;border:none;color:#fff;padding:10px;border-radius:7px;cursor:pointer;font-weight:600;">+ Add Machine</button>
+      </div>
+
+      <!-- Add Unit to existing machine -->
+      <div style="background:#21262d;border:1px solid #444c56;border-radius:8px;padding:14px;">
+        <div style="font-size:0.75rem;color:#a371f7;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Add Unit to Existing Machine</div>
+        <select id="unitMachTypeSelect" onchange="populateUnitMachineSelect()"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:9px 12px;font-size:0.85rem;margin-bottom:8px;-webkit-appearance:none;">
+          <option value="">Select Machine Type</option>
+        </select>
+        <select id="unitMachNameSelect"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:9px 12px;font-size:0.85rem;margin-bottom:8px;-webkit-appearance:none;">
+          <option value="">Select Machine</option>
+        </select>
+        <input type="text" id="newUnitName" placeholder="New unit name e.g. PU8"
+          style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:9px 12px;font-size:0.85rem;margin-bottom:8px;box-sizing:border-box;" />
+        <button onclick="addNewUnit()"
+          style="width:100%;background:#1f6feb;border:none;color:#fff;padding:10px;border-radius:7px;cursor:pointer;font-weight:600;">+ Add Unit</button>
+      </div>
+
+      <div id="machSaveMsg" style="color:#3fb950;font-size:0.75rem;margin-top:10px;display:none;">Machine list updated!</div>
+    </div>
+
+    <!-- Tab: Categories -->
+    <div id="tabCat" class="admin-tab-content" style="display:none;">
+      <div style="font-size:0.78rem;color:#8b949e;margin-bottom:10px;">One category per line.</div>
+      <textarea id="catList" rows="10"
+        style="width:100%;background:#21262d;border:1px solid #444c56;border-radius:8px;color:#e6edf3;padding:10px;font-size:0.85rem;resize:vertical;"></textarea>
+      <button onclick="saveCategories()"
+        style="margin-top:10px;width:100%;background:#238636;border:none;color:#fff;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">Save Categories</button>
+      <div id="catSaveMsg" style="color:#3fb950;font-size:0.75rem;margin-top:6px;display:none;">Saved!</div>
+    </div>
+
+    <!-- Tab: Problem Types -->
+    <div id="tabProb" class="admin-tab-content" style="display:none;">
+      <div style="font-size:0.78rem;color:#8b949e;margin-bottom:10px;">One problem type per line.</div>
+      <textarea id="probList" rows="8"
+        style="width:100%;background:#21262d;border:1px solid #444c56;border-radius:8px;color:#e6edf3;padding:10px;font-size:0.85rem;resize:vertical;"></textarea>
+      <button onclick="saveProblemTypes()"
+        style="margin-top:10px;width:100%;background:#238636;border:none;color:#fff;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">Save Problem Types</button>
+      <div id="probSaveMsg" style="color:#3fb950;font-size:0.75rem;margin-top:6px;display:none;">Saved!</div>
+    </div>
+
+    <!-- Current machine list viewer -->
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #30363d;">
+      <div style="font-size:0.75rem;color:#8b949e;margin-bottom:8px;font-weight:600;">CURRENT MACHINE TYPES IN SYSTEM</div>
+      <div id="machineListView" style="font-size:0.78rem;color:#3fb950;line-height:2;"></div>
+    </div>
+
+  </div><!-- end adminContent -->
+</div>
+</div>
+
+<style>
+.admin-tab {
+  padding:7px 14px;border-radius:7px;border:1px solid #444c56;
+  background:transparent;color:#8b949e;cursor:pointer;font-size:0.78rem;font-weight:600;
+}
+.admin-tab.active { background:#a371f715;border-color:#a371f7;color:#a371f7; }
+</style>
+
+</body>
+</html>

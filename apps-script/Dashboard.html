@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parksons Maintenance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0d13; --surface:#111620; --surface2:#171d2b;
+  --border:#1e2a3d; --accent:#f0a500; --blue:#2d7bf4;
+  --green:#1fc67a; --red:#e84040; --purple:#9b5de5;
+  --cyan:#00d4ff; --text:#d8e0ee; --muted:#6b7a99;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; min-height:100vh; }
+.header {
+  background:var(--surface); border-bottom:1px solid var(--border);
+  padding:14px 24px; display:flex; align-items:center;
+  justify-content:space-between; flex-wrap:wrap; gap:10px;
+  position:sticky; top:0; z-index:100;
+}
+.header-left { display:flex; align-items:center; gap:14px; }
+.logo-box { width:42px; height:42px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'Rajdhani',sans-serif; font-size:15px; font-weight:700; color:#0a0d13; }
+.header-title { font-family:'Rajdhani',sans-serif; font-size:1.2rem; font-weight:700; letter-spacing:2px; }
+.header-sub { font-size:0.7rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+.header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.live-badge { display:flex; align-items:center; gap:6px; font-size:0.75rem; color:var(--green); font-weight:600; }
+.live-dot { width:8px; height:8px; background:var(--green); border-radius:50%; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+.btn { padding:8px 16px; border-radius:5px; border:none; cursor:pointer; font-family:'Exo 2',sans-serif; font-size:0.8rem; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:opacity .2s; }
+.btn:hover { opacity:.85; }
+.btn-refresh { background:var(--accent); color:#0a0d13; }
+.btn-admin   { background:var(--blue); color:#fff; }
+.gen-time { font-size:0.7rem; color:var(--muted); }
+.filter-bar { background:var(--surface); border-bottom:1px solid var(--border); padding:10px 24px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.filter-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-right:4px; }
+.filter-select { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:6px 28px 6px 10px; border-radius:5px; font-family:'Exo 2',sans-serif; font-size:0.78rem; cursor:pointer; outline:none; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; }
+.filter-select:focus { border-color:var(--accent); }
+.btn-reset { background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 14px; border-radius:5px; font-size:0.78rem; cursor:pointer; }
+.btn-reset:hover { border-color:var(--accent); color:var(--accent); }
+.main { max-width:1500px; margin:0 auto; padding:20px 24px; }
+.section-title { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin:24px 0 14px; display:flex; align-items:center; gap:8px; }
+.section-title::before { content:''; display:block; width:3px; height:14px; background:var(--accent); border-radius:2px; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; }
+.kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px 20px; position:relative; overflow:hidden; }
+.kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--accent); border-radius:8px 8px 0 0; }
+.kpi-card.blue::before   { background:var(--blue); }
+.kpi-card.red::before    { background:var(--red); }
+.kpi-card.green::before  { background:var(--green); }
+.kpi-card.purple::before { background:var(--purple); }
+.kpi-card.cyan::before   { background:var(--cyan); }
+.kpi-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:10px; }
+.kpi-value { font-family:'Rajdhani',sans-serif; font-size:2.2rem; font-weight:700; line-height:1; color:var(--accent); }
+.kpi-card.blue   .kpi-value { color:var(--blue); }
+.kpi-card.red    .kpi-value { color:var(--red); }
+.kpi-card.green  .kpi-value { color:var(--green); }
+.kpi-card.purple .kpi-value { color:var(--purple); }
+.kpi-card.cyan   .kpi-value { color:var(--cyan); }
+.kpi-unit { font-size:0.72rem; color:var(--muted); margin-top:6px; }
+.kpi-desc { font-size:0.65rem; color:var(--muted); margin-top:3px; }
+.chart-grid  { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.chart-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+@media(max-width:1100px){ .chart-grid3 { grid-template-columns:1fr 1fr; } }
+@media(max-width:860px) { .chart-grid,.chart-grid3 { grid-template-columns:1fr; } }
+.chart-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px 20px; }
+.chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.chart-title { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); }
+.chart-badge { font-size:0.65rem; background:var(--surface2); color:var(--muted); padding:3px 8px; border-radius:10px; }
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:auto; margin-bottom:20px; }
+table { width:100%; border-collapse:collapse; font-size:0.82rem; min-width:600px; }
+thead tr { background:var(--surface2); }
+th { padding:10px 14px; text-align:left; color:var(--muted); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+td { padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#ffffff06; }
+.badge { padding:2px 10px; border-radius:10px; font-size:0.72rem; font-weight:600; display:inline-block; }
+.badge-bd  { background:#e8404018; color:var(--red); }
+.badge-pm  { background:#1fc67a18; color:var(--green); }
+.badge-cor { background:#f0a50018; color:var(--accent); }
+.badge-op  { background:#2d7bf418; color:var(--blue); }
+.badge-oth { background:#9b5de518; color:var(--purple); }
+.avail-bar  { height:5px; background:var(--border); border-radius:3px; margin-top:5px; overflow:hidden; }
+.avail-fill { height:100%; border-radius:3px; }
+.no-data { text-align:center; padding:40px 20px; color:var(--muted); font-size:0.9rem; }
+.footer { text-align:center; padding:24px; font-size:0.7rem; color:var(--muted); border-top:1px solid var(--border); margin-top:24px; }
+.pending-warn { background:#f0a50010; border:1px solid #f0a50040; border-radius:8px; padding:10px 16px; font-size:0.8rem; color:var(--accent); display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+</style>
+</head>
+<body>
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-box">PKS</div>
+    <div>
+      <div class="header-title">PARKSONS MAINTENANCE SYSTEM</div>
+      <div class="header-sub">Equipment Reliability &amp; Downtime Intelligence</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div> LIVE DATA</div>
+    <button class="btn btn-refresh" onclick="location.reload()">&#8635; REFRESH</button>
+    <a class="btn btn-admin" id="adminLink" href="#" target="_blank">&#9881; Admin</a>
+    <span class="gen-time" id="genTime">Generated: --</span>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <span class="filter-label">Filter:</span>
+  <select class="filter-select" id="fMonth"   onchange="applyFilters()"><option value="">All Months</option></select>
+  <select class="filter-select" id="fDept"    onchange="applyFilters()"><option value="">All Departments</option></select>
+  <select class="filter-select" id="fMachine" onchange="applyFilters()"><option value="">All Machines</option></select>
+  <select class="filter-select" id="fShift"   onchange="applyFilters()"><option value="">All Shifts</option></select>
+  <select class="filter-select" id="fCat"     onchange="applyFilters()"><option value="">All Categories</option></select>
+  <select class="filter-select" id="fPerson"  onchange="applyFilters()"><option value="">All Persons</option></select>
+  <button class="btn-reset" onclick="resetFilters()">&#10006; Reset</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="pending-warn" id="pendingWarn" style="display:none">
+    &#9888; <span id="pendingMsg"></span>&nbsp;&mdash;&nbsp;
+    <a id="adminLinkWarn" href="#" target="_blank" style="color:var(--accent)">Open Admin Panel to approve</a>
+  </div>
+
+  <!-- KPIs -->
+  <div class="section-title">Key Performance Indicators</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Avg MTTR</div>
+      <div class="kpi-value" id="kMTTR">--</div>
+      <div class="kpi-unit">minutes</div>
+      <div class="kpi-desc">Mean Time To Repair (Breakdown only)</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Avg MTBF</div>
+      <div class="kpi-value" id="kMTBF">--</div>
+      <div class="kpi-unit">hours</div>
+      <div class="kpi-desc">Mean Time Between Failures</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Total Downtime</div>
+      <div class="kpi-value" id="kDowntime">0.0</div>
+      <div class="kpi-unit">hours</div>
+      <div class="kpi-desc">All maintenance categories</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Breakdown Count</div>
+      <div class="kpi-value" id="kBD">0</div>
+      <div class="kpi-unit">events</div>
+      <div class="kpi-desc">Category = Breakdown only</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Avg Availability</div>
+      <div class="kpi-value" id="kAvail">--</div>
+      <div class="kpi-unit">%</div>
+      <div class="kpi-desc">Per machine per month</div>
+    </div>
+    <div class="kpi-card cyan">
+      <div class="kpi-label">Breakdown %</div>
+      <div class="kpi-value" id="kBDPct">--</div>
+      <div class="kpi-unit">%</div>
+      <div class="kpi-desc">MTTR / (MTBF + MTTR) x 100</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Entries</div>
+      <div class="kpi-value" id="kTotal">0</div>
+      <div class="kpi-unit">records</div>
+      <div class="kpi-desc">All approved entries</div>
+    </div>
+  </div>
+
+  <!-- TREND CHARTS -->
+  <div class="section-title">Trend Analysis</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Monthly Downtime &amp; Breakdown Count</span><span class="chart-badge">BAR+LINE</span></div>
+      <canvas id="chartMonthly" height="180"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Category Distribution</span><span class="chart-badge">DOUGHNUT</span></div>
+      <canvas id="chartCategory" height="180"></canvas>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Machine-wise Breakdown Count</span><span class="chart-badge">BAR</span></div>
+      <canvas id="chartMachine" height="180"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">MTTR Trend (Monthly Avg)</span><span class="chart-badge">LINE</span></div>
+      <canvas id="chartMTTR" height="180"></canvas>
+    </div>
+  </div>
+  <div class="chart-grid3">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Category-wise Downtime</span><span class="chart-badge">HRS</span></div>
+      <canvas id="chartCatDown" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Problem Type Downtime</span><span class="chart-badge">HRS</span></div>
+      <canvas id="chartProbDown" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Downtime by Shift</span><span class="chart-badge">HRS</span></div>
+      <canvas id="chartShiftDown" height="200"></canvas>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Downtime by Department</span><span class="chart-badge">HRS</span></div>
+      <canvas id="chartDeptDown" height="180"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Top 10 Machines by Downtime</span><span class="chart-badge">MIN</span></div>
+      <canvas id="chartTop10" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- MACHINE AVAILABILITY -->
+  <div class="section-title">Machine Availability Summary</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Machine</th><th>Dept</th><th>BD Count</th><th>Down Hrs</th><th>Entries</th><th>MTTR (min)</th><th>MTBF (hrs)</th><th>Availability %</th></tr></thead>
+      <tbody id="machineTable"><tr><td colspan="8" class="no-data">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- MONTHLY SUMMARY -->
+  <div class="section-title">Accumulative Monthly Summary</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Month</th><th>Total Entries</th><th>Breakdown Count</th><th>Total Downtime (hrs)</th><th>Avg MTTR (min)</th><th>Avg MTBF (hrs)</th></tr></thead>
+      <tbody id="monthlyTable"><tr><td colspan="6" class="no-data">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- RECENT ENTRIES -->
+  <div class="section-title">Recent Entries (Last 50)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Machine</th><th>Dept</th><th>Unit</th><th>Shift</th><th>Category</th><th>Problem Type</th><th>Description</th><th>Duration (min)</th><th>Attended By</th></tr></thead>
+      <tbody id="recentTable"><tr><td colspan="10" class="no-data">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- TOP DOWNTIME EVENTS -->
+  <div class="section-title">Highest Downtime Events (Top 50)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Machine</th><th>Dept</th><th>Category</th><th>Problem Type</th><th>Description</th><th>Duration (min)</th><th>Attended By</th></tr></thead>
+      <tbody id="topDownTable"><tr><td colspan="8" class="no-data">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer">Parksons Packaging Ltd &nbsp;|&nbsp; Maintenance Intelligence System &nbsp;|&nbsp; Data refreshes on page reload</div>
+
+<script>
+// ── DATA injected by Apps Script template ──
+var RAW_DATA_JSON = <?= dataJson ?>;
+var ADMIN_URL     = '<?= adminUrl ?>';
+
+var allRows = [], genTime = '--', pendingCount = 0;
+try {
+  var parsed = (typeof RAW_DATA_JSON === 'string') ? JSON.parse(RAW_DATA_JSON) : RAW_DATA_JSON;
+  if (parsed && parsed.rows)         allRows      = parsed.rows;
+  if (parsed && parsed.generated)    genTime      = new Date(parsed.generated).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  if (parsed && parsed.pendingCount) pendingCount = parsed.pendingCount || 0;
+} catch(e) { console.error('Data parse error:', e); }
+
+document.getElementById('adminLink').href     = ADMIN_URL;
+document.getElementById('adminLinkWarn').href = ADMIN_URL;
+document.getElementById('genTime').textContent = 'Generated: ' + genTime;
+if (pendingCount > 0) {
+  document.getElementById('pendingWarn').style.display = 'flex';
+  document.getElementById('pendingMsg').textContent = pendingCount + ' entr' + (pendingCount===1?'y':'ies') + ' pending approval — not shown in dashboard';
+}
+
+// ── MONTH ORDER ──
+var monthOrder = ['Apr-23','May-23','Jun-23','Jul-23','Aug-23','Sep-23','Oct-23','Nov-23','Dec-23',
+  'Jan-24','Feb-24','Mar-24','Apr-24','May-24','Jun-24','Jul-24','Aug-24','Sep-24','Oct-24','Nov-24','Dec-24',
+  'Jan-25','Feb-25','Mar-25','Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25',
+  'Jan-26','Feb-26','Mar-26','Apr-26','May-26','Jun-26','Jul-26','Aug-26','Sep-26','Oct-26','Nov-26','Dec-26'];
+
+var CHART_DEFAULTS = {
+  responsive:true,
+  plugins:{ legend:{ labels:{ color:'#6b7a99', font:{size:11} } } },
+  scales:{ x:{ ticks:{color:'#6b7a99',font:{size:10}}, grid:{color:'#1e2a3d'} }, y:{ ticks:{color:'#6b7a99',font:{size:10}}, grid:{color:'#1e2a3d'}, beginAtZero:true } }
+};
+var PAL = ['#2d7bf4','#f0a500','#e84040','#1fc67a','#9b5de5','#00d4ff','#e05c2a','#6b7a99','#ffe66d','#a8dadc','#ff6b6b','#4ecdc4'];
+
+// ── POPULATE FILTERS ──
+function populateFilter(selId, key) {
+  var sel = document.getElementById(selId), vals = {};
+  allRows.forEach(function(r){ if(r[key]) vals[r[key]]=1; });
+  Object.keys(vals).sort().forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+}
+populateFilter('fMonth',   'monthYear');
+populateFilter('fDept',    'machineType');
+populateFilter('fMachine', 'machineName');
+populateFilter('fShift',   'shift');
+populateFilter('fCat',     'category');
+populateFilter('fPerson',  'attendedBy');
+
+// ── FILTER LOGIC ──
+var filteredRows = allRows.slice();
+function getFiltered() {
+  var m=document.getElementById('fMonth').value, d=document.getElementById('fDept').value,
+      mc=document.getElementById('fMachine').value, s=document.getElementById('fShift').value,
+      c=document.getElementById('fCat').value, p=document.getElementById('fPerson').value;
+  return allRows.filter(function(r){
+    return (!m||r.monthYear===m) && (!d||r.machineType===d) && (!mc||r.machineName===mc) &&
+           (!s||r.shift===s) && (!c||r.category===c) && (!p||r.attendedBy===p);
+  });
+}
+function applyFilters() {
+  filteredRows = getFiltered();
+  updateKPIs(filteredRows);
+  updateCharts(filteredRows);
+  updateMachineTable(filteredRows);
+  updateMonthlyTable(filteredRows);
+  updateRecentTable(filteredRows);
+  updateTopDownTable(filteredRows);
+}
+function resetFilters() {
+  ['fMonth','fDept','fMachine','fShift','fCat','fPerson'].forEach(function(id){ document.getElementById(id).value=''; });
+  applyFilters();
+}
+
+// ── KPIs ──
+function updateKPIs(rows) {
+  var bd = rows.filter(function(r){ return r.category==='Breakdown'; });
+  var bdc = bd.length;
+  var totMin = rows.reduce(function(s,r){ return s+(r.minutes||0); },0);
+  var bdMin  = bd.reduce(function(s,r){ return s+(r.minutes||0); },0);
+  var mttr   = bdc>0 ? (bdMin/bdc) : 0;
+
+  // MTBF per machine-month
+  var mm={};
+  rows.forEach(function(r){
+    var k=r.machineName+'|'+r.monthYear;
+    if(!mm[k]) mm[k]={av:r.availableMin||44640,bm:0,bc:0};
+    if(r.category==='Breakdown'){mm[k].bm+=r.minutes;mm[k].bc++;}
+  });
+  var mtbfL=[];
+  Object.keys(mm).forEach(function(k){ var m=mm[k]; if(m.bc>0) mtbfL.push((m.av-m.bm)/m.bc); });
+  var mtbf = mtbfL.length>0 ? mtbfL.reduce(function(a,b){return a+b;},0)/mtbfL.length : 0;
+
+  // Availability
+  var ad={};
+  rows.forEach(function(r){ var k=r.machineName+'|'+r.monthYear; if(!ad[k]) ad[k]={d:0,a:r.availableMin||44640}; ad[k].d+=(r.minutes||0); });
+  var al=Object.keys(ad).map(function(k){ var m=ad[k]; return Math.min(100,Math.max(0,((m.a-m.d)/m.a)*100)); });
+  var avgA = al.length>0 ? (al.reduce(function(a,b){return a+b;},0)/al.length).toFixed(2) : '100.00';
+
+  // Breakdown % = MTTR / (MTBF + MTTR) * 100
+  var bdPct = (mtbf+mttr)>0 ? ((mttr/(mtbf+mttr))*100).toFixed(1) : '--';
+
+  set('kMTTR',    mttr>0 ? Math.round(mttr) : '--');
+  set('kMTBF',    mtbf>0 ? (mtbf/60).toFixed(1) : '--');
+  set('kDowntime',(totMin/60).toFixed(1));
+  set('kBD',      bdc);
+  set('kAvail',   avgA);
+  set('kBDPct',   bdPct);
+  set('kTotal',   rows.length);
+}
+function set(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+
+// ── BADGE ──
+function catBadge(cat) {
+  var c=(cat||'').toLowerCase();
+  if(c==='breakdown')  return '<span class="badge badge-bd">'+cat+'</span>';
+  if(c==='preventive') return '<span class="badge badge-pm">'+cat+'</span>';
+  if(c==='corrective') return '<span class="badge badge-cor">'+cat+'</span>';
+  if(c==='operational')return '<span class="badge badge-op">'+cat+'</span>';
+  return '<span class="badge badge-oth">'+(cat||'--')+'</span>';
+}
+
+// ── MACHINE TABLE (with MTTR, MTBF) ──
+function updateMachineTable(rows) {
+  var mm={};
+  rows.forEach(function(r){
+    var mc=r.machineName||'--';
+    if(!mm[mc]) mm[mc]={dept:r.machineType||'',bc:0,d:0,entries:0,a:r.availableMin||44640,bdMin:0};
+    mm[mc].entries++;
+    if(r.category==='Breakdown'){mm[mc].bc++;mm[mc].bdMin+=(r.minutes||0);}
+    mm[mc].d+=(r.minutes||0);
+  });
+  var machs=Object.keys(mm).sort(function(a,b){return mm[b].d-mm[a].d;});
+  document.getElementById('machineTable').innerHTML = machs.length ? machs.map(function(m){
+    var x=mm[m];
+    var av=Math.min(100,Math.max(0,((x.a-x.d)/x.a)*100));
+    var ac=av>=99?'var(--green)':av>=97?'var(--accent)':'var(--red)';
+    var mttr=x.bc>0?Math.round(x.bdMin/x.bc):'--';
+    var mtbf=x.bc>0?((x.a-x.bdMin)/x.bc/60).toFixed(1):'--';
+    return '<tr>'+
+      '<td><strong>'+m+'</strong></td>'+
+      '<td style="color:var(--muted);font-size:0.78rem;">'+x.dept+'</td>'+
+      '<td style="color:var(--red);font-weight:600;text-align:center;">'+x.bc+'</td>'+
+      '<td style="text-align:center;">'+(x.d/60).toFixed(1)+' hrs</td>'+
+      '<td style="text-align:center;color:var(--muted);">'+x.entries+'</td>'+
+      '<td style="text-align:center;">'+mttr+'</td>'+
+      '<td style="text-align:center;">'+mtbf+'</td>'+
+      '<td style="min-width:120px;"><div style="color:'+ac+';font-weight:700;">'+av.toFixed(2)+'%</div>'+
+        '<div class="avail-bar"><div class="avail-fill" style="width:'+av.toFixed(1)+'%;background:'+ac+'"></div></div></td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="8" class="no-data">No data for selected filters</td></tr>';
+}
+
+// ── MONTHLY SUMMARY TABLE ──
+function updateMonthlyTable(rows) {
+  var mm={};
+  rows.forEach(function(r){
+    var mo=r.monthYear||'Unknown';
+    if(!mm[mo]) mm[mo]={entries:0,bc:0,d:0,bdMin:0,av:r.availableMin||44640,machMonths:{}};
+    mm[mo].entries++;
+    if(r.category==='Breakdown'){mm[mo].bc++;mm[mo].bdMin+=(r.minutes||0);}
+    mm[mo].d+=(r.minutes||0);
+    var k=r.machineName+'|'+mo;
+    if(!mm[mo].machMonths[k]) mm[mo].machMonths[k]={av:r.availableMin||44640,bm:0,bc:0};
+    if(r.category==='Breakdown'){mm[mo].machMonths[k].bm+=(r.minutes||0);mm[mo].machMonths[k].bc++;}
+  });
+  var months=Object.keys(mm).sort(function(a,b){ var ia=monthOrder.indexOf(a),ib=monthOrder.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); });
+  document.getElementById('monthlyTable').innerHTML = months.length ? months.map(function(mo){
+    var x=mm[mo];
+    var mttr=x.bc>0?(x.bdMin/x.bc).toFixed(1):'--';
+    var mtbfL=[];
+    Object.keys(x.machMonths).forEach(function(k){ var m=x.machMonths[k]; if(m.bc>0) mtbfL.push((m.av-m.bm)/m.bc/60); });
+    var mtbf=mtbfL.length>0?(mtbfL.reduce(function(a,b){return a+b;},0)/mtbfL.length).toFixed(1):'--';
+    return '<tr>'+
+      '<td><strong>'+mo+'</strong></td>'+
+      '<td style="text-align:center;">'+x.entries+'</td>'+
+      '<td style="text-align:center;color:var(--red);font-weight:600;">'+x.bc+'</td>'+
+      '<td style="text-align:center;">'+(x.d/60).toFixed(1)+' hrs</td>'+
+      '<td style="text-align:center;color:var(--accent);">'+mttr+'</td>'+
+      '<td style="text-align:center;color:var(--blue);">'+mtbf+'</td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="6" class="no-data">No data</td></tr>';
+}
+
+// ── RECENT TABLE (50) ──
+function updateRecentTable(rows) {
+  var recent=rows.slice().reverse().slice(0,50);
+  document.getElementById('recentTable').innerHTML = recent.length ? recent.map(function(r){
+    return '<tr>'+
+      '<td style="white-space:nowrap;color:var(--muted);font-size:0.78rem;">'+(r.date||'--')+'</td>'+
+      '<td><strong>'+(r.machineName||'--')+'</strong></td>'+
+      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.machineType||'--')+'</td>'+
+      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.unit||'--')+'</td>'+
+      '<td style="font-size:0.78rem;">'+(r.shift||'--')+'</td>'+
+      '<td>'+catBadge(r.category)+'</td>'+
+      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.problemType||'--')+'</td>'+
+      '<td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+(r.description||'')+'">'+(r.description||'--')+'</td>'+
+      '<td style="text-align:center;color:'+(r.category==='Breakdown'?'var(--red)':'var(--text)')+';">'+(r.minutes||0)+'</td>'+
+      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.attendedBy||'--')+'</td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="10" class="no-data">No entries found</td></tr>';
+}
+
+// ── TOP DOWNTIME TABLE (50) ──
+function updateTopDownTable(rows) {
+  var sorted=rows.slice().sort(function(a,b){return (b.minutes||0)-(a.minutes||0);}).slice(0,50);
+  document.getElementById('topDownTable').innerHTML = sorted.length ? sorted.map(function(r){
+    return '<tr>'+
+      '<td style="white-space:nowrap;color:var(--muted);font-size:0.78rem;">'+(r.date||'--')+'</td>'+
+      '<td><strong>'+(r.machineName||'--')+'</strong></td>'+
+      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.machineType||'--')+'</td>'+
+      '<td>'+catBadge(r.category)+'</td>'+
+      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.problemType||'--')+'</td>'+
+      '<td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+(r.description||'')+'">'+(r.description||'--')+'</td>'+
+      '<td style="text-align:center;color:var(--red);font-weight:700;">'+(r.minutes||0)+'</td>'+
+      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.attendedBy||'--')+'</td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="8" class="no-data">No entries found</td></tr>';
+}
+
+// ── CHARTS ──
+var CH = {};
+function dc(id){ if(CH[id]){CH[id].destroy();delete CH[id];} }
+
+function sortMonths(arr) {
+  return arr.sort(function(a,b){ var ia=monthOrder.indexOf(a),ib=monthOrder.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); });
+}
+
+function updateCharts(rows) {
+  // 1. Monthly Downtime + BD Count
+  dc('monthly');
+  var md={};
+  rows.forEach(function(r){ var m=r.monthYear||'Unknown'; if(!md[m]) md[m]={d:0,b:0}; md[m].d+=(r.minutes||0)/60; if(r.category==='Breakdown') md[m].b++; });
+  var ms=sortMonths(Object.keys(md));
+  CH['monthly']=new Chart(document.getElementById('chartMonthly'),{type:'bar',data:{labels:ms,datasets:[
+    {label:'Downtime (hrs)',data:ms.map(function(m){return+md[m].d.toFixed(1);}),backgroundColor:'#f0a50066',borderColor:'#f0a500',borderWidth:2,borderRadius:3,yAxisID:'y'},
+    {label:'Breakdown Count',data:ms.map(function(m){return md[m].b;}),type:'line',borderColor:'#e84040',backgroundColor:'rgba(232,64,64,0.1)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#e84040',fill:true,tension:0.35,yAxisID:'y2'}
+  ]},options:{responsive:true,plugins:{legend:{labels:{color:'#6b7a99',font:{size:11}}}},scales:{
+    x:{ticks:{color:'#6b7a99',font:{size:10}},grid:{color:'#1e2a3d'}},
+    y:{ticks:{color:'#6b7a99',font:{size:10}},grid:{color:'#1e2a3d'},beginAtZero:true,title:{display:true,text:'Hrs',color:'#6b7a99',font:{size:10}}},
+    y2:{position:'right',ticks:{color:'#e84040',font:{size:10}},grid:{display:false},beginAtZero:true,title:{display:true,text:'BD',color:'#e84040',font:{size:10}}}
+  }}});
+
+  // 2. Category doughnut
+  dc('cat');
+  var cd={};
+  rows.forEach(function(r){ if(r.category) cd[r.category]=(cd[r.category]||0)+1; });
+  var cats=Object.keys(cd);
+  var clr={Breakdown:'#e84040',Preventive:'#2d7bf4',Corrective:'#f0a500',Operational:'#1fc67a',Predictive:'#9b5de5',Planning:'#6b7a99'};
+  CH['cat']=new Chart(document.getElementById('chartCategory'),{type:'doughnut',data:{labels:cats,datasets:[{data:cats.map(function(c){return cd[c];}),backgroundColor:cats.map(function(c){return clr[c]||'#4ecdc4';}),borderColor:'#111620',borderWidth:2,hoverOffset:6}]},options:{responsive:true,cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#6b7a99',font:{size:11},padding:8,boxWidth:10}}}}});
+
+  // 3. Machine BD bar
+  dc('mach');
+  var mb={};
+  rows.forEach(function(r){ if(r.category==='Breakdown'){var mc=r.machineName||'--';mb[mc]=(mb[mc]||0)+1;} });
+  var mcL=Object.keys(mb).sort(function(a,b){return mb[b]-mb[a];}).slice(0,15);
+  CH['mach']=new Chart(document.getElementById('chartMachine'),{type:'bar',data:{labels:mcL,datasets:[{label:'Breakdowns',data:mcL.map(function(m){return mb[m];}),backgroundColor:'#9b5de566',borderColor:'#9b5de5',borderWidth:2,borderRadius:4}]},options:Object.assign({},CHART_DEFAULTS)});
+
+  // 4. MTTR monthly line
+  dc('mttr');
+  var tm={};
+  rows.filter(function(r){return r.category==='Breakdown';}).forEach(function(r){ var m=r.monthYear||'Unknown'; if(!tm[m]) tm[m]={t:0,c:0}; tm[m].t+=r.minutes;tm[m].c++; });
+  var tl=sortMonths(Object.keys(tm));
+  CH['mttr']=new Chart(document.getElementById('chartMTTR'),{type:'line',data:{labels:tl,datasets:[{label:'Avg MTTR (min)',data:tl.map(function(m){return tm[m].c?Math.round(tm[m].t/tm[m].c):0;}),borderColor:'#f0a500',backgroundColor:'rgba(240,165,0,0.12)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#f0a500',fill:true,tension:0.35}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#1e2a3d'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+  // 5. Category-wise downtime (hrs)
+  dc('catdown');
+  var cdd={};
+  rows.forEach(function(r){ if(r.category) cdd[r.category]=(cdd[r.category]||0)+(r.minutes||0)/60; });
+  var cdL=Object.keys(cdd).sort(function(a,b){return cdd[b]-cdd[a];});
+  CH['catdown']=new Chart(document.getElementById('chartCatDown'),{type:'bar',data:{labels:cdL,datasets:[{label:'Downtime (hrs)',data:cdL.map(function(c){return+cdd[c].toFixed(1);}),backgroundColor:cdL.map(function(c){return clr[c]||'#4ecdc4';}),borderRadius:4}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+  // 6. Problem type downtime
+  dc('probdown');
+  var pd={};
+  rows.forEach(function(r){ if(r.problemType) pd[r.problemType]=(pd[r.problemType]||0)+(r.minutes||0)/60; });
+  var pdL=Object.keys(pd).sort(function(a,b){return pd[b]-pd[a];}).slice(0,10);
+  CH['probdown']=new Chart(document.getElementById('chartProbDown'),{type:'bar',data:{labels:pdL,datasets:[{label:'Downtime (hrs)',data:pdL.map(function(p){return+pd[p].toFixed(1);}),backgroundColor:'rgba(0,212,255,0.6)',borderColor:'#00d4ff',borderWidth:1,borderRadius:4}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+  // 7. Shift downtime
+  dc('shiftdown');
+  var sd={};
+  rows.forEach(function(r){ var s=r.shift||'Unknown'; sd[s]=(sd[s]||0)+(r.minutes||0)/60; });
+  var sdL=Object.keys(sd);
+  CH['shiftdown']=new Chart(document.getElementById('chartShiftDown'),{type:'polarArea',data:{labels:sdL,datasets:[{data:sdL.map(function(s){return+sd[s].toFixed(1);}),backgroundColor:['rgba(45,123,244,0.75)','rgba(240,165,0,0.75)','rgba(232,64,64,0.75)','rgba(31,198,122,0.75)','rgba(155,93,229,0.75)'],borderColor:'#111620',borderWidth:2}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:6,boxWidth:10}}},scales:{r:{grid:{color:'#1e2a3d'},ticks:{font:{size:9},backdropColor:'transparent'}}}}});
+
+  // 8. Dept downtime
+  dc('deptdown');
+  var dd={};
+  rows.forEach(function(r){ if(r.machineType) dd[r.machineType]=(dd[r.machineType]||0)+(r.minutes||0)/60; });
+  var ddL=Object.keys(dd).sort(function(a,b){return dd[b]-dd[a];});
+  CH['deptdown']=new Chart(document.getElementById('chartDeptDown'),{type:'bar',data:{labels:ddL,datasets:[{label:'Downtime (hrs)',data:ddL.map(function(d){return+dd[d].toFixed(1);}),backgroundColor:ddL.map(function(_,i){return PAL[i%PAL.length];}),borderRadius:4}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+  // 9. Top 10 machines by downtime
+  dc('top10');
+  var t10={};
+  rows.forEach(function(r){ if(r.machineName) t10[r.machineName]=(t10[r.machineName]||0)+(r.minutes||0); });
+  var t10L=Object.keys(t10).sort(function(a,b){return t10[b]-t10[a];}).slice(0,10);
+  CH['top10']=new Chart(document.getElementById('chartTop10'),{type:'bar',data:{labels:t10L,datasets:[{label:'Downtime (min)',data:t10L.map(function(m){return t10[m];}),backgroundColor:'rgba(232,64,64,0.7)',borderColor:'#e84040',borderWidth:1,borderRadius:3}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+}
+
+// ── INITIAL RENDER ──
+applyFilters();
+</script>
+</body>
+</html>

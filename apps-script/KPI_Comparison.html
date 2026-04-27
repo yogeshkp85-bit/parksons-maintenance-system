@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parksons KPI Comparison — 3-Year Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0d13; --surface:#111620; --surface2:#171d2b;
+  --border:#1e2a3d; --accent:#f0a500; --blue:#2d7bf4;
+  --green:#1fc67a; --red:#e84040; --purple:#9b5de5;
+  --cyan:#00d4ff; --text:#d8e0ee; --muted:#6b7a99;
+  --fy1:#2d7bf4; --fy2:#f0a500; --fy3:#1fc67a;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; min-height:100vh; }
+.header { background:var(--surface); border-bottom:2px solid var(--accent); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; position:sticky; top:0; z-index:100; }
+.header-left { display:flex; align-items:center; gap:14px; }
+.logo-box { width:42px; height:42px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'Rajdhani',sans-serif; font-size:15px; font-weight:700; color:#0a0d13; }
+.header-title { font-family:'Rajdhani',sans-serif; font-size:1.2rem; font-weight:700; letter-spacing:2px; }
+.header-sub { font-size:0.7rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+.header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.btn { padding:8px 16px; border-radius:5px; border:none; cursor:pointer; font-family:'Exo 2',sans-serif; font-size:0.8rem; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:opacity .2s; }
+.btn:hover { opacity:.85; }
+.btn-dash { background:var(--blue); color:#fff; }
+.btn-refresh { background:var(--accent); color:#0a0d13; }
+
+/* FILTER BAR */
+.filter-bar { background:var(--surface); border-bottom:1px solid var(--border); padding:10px 24px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.filter-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+.filter-select { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:6px 28px 6px 10px; border-radius:5px; font-family:'Exo 2',sans-serif; font-size:0.78rem; cursor:pointer; outline:none; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; }
+.filter-select:focus { border-color:var(--accent); }
+.btn-reset { background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 14px; border-radius:5px; font-size:0.78rem; cursor:pointer; }
+.btn-reset:hover { border-color:var(--accent); color:var(--accent); }
+
+/* FY LEGEND */
+.fy-legend { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.fy-dot { display:inline-flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:600; }
+.dot { width:12px; height:12px; border-radius:50%; display:inline-block; }
+
+.main { max-width:1500px; margin:0 auto; padding:20px 24px; }
+.section-title { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin:24px 0 14px; display:flex; align-items:center; gap:8px; }
+.section-title::before { content:''; display:block; width:3px; height:14px; background:var(--accent); border-radius:2px; }
+
+/* FY KPI CARDS */
+.fy-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+@media(max-width:900px){ .fy-grid { grid-template-columns:1fr; } }
+.fy-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; position:relative; overflow:hidden; }
+.fy-card.fy1 { border-top:3px solid var(--fy1); }
+.fy-card.fy2 { border-top:3px solid var(--fy2); }
+.fy-card.fy3 { border-top:3px solid var(--fy3); }
+.fy-title { font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700; letter-spacing:2px; margin-bottom:16px; }
+.fy-card.fy1 .fy-title { color:var(--fy1); }
+.fy-card.fy2 .fy-title { color:var(--fy2); }
+.fy-card.fy3 .fy-title { color:var(--fy3); }
+.fy-kpis { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.fy-kpi { background:var(--surface2); border-radius:6px; padding:12px; }
+.fy-kpi-lbl { font-size:0.6rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:6px; }
+.fy-kpi-val { font-family:'Rajdhani',sans-serif; font-size:1.6rem; font-weight:700; line-height:1; }
+.fy-card.fy1 .fy-kpi-val { color:var(--fy1); }
+.fy-card.fy2 .fy-kpi-val { color:var(--fy2); }
+.fy-card.fy3 .fy-kpi-val { color:var(--fy3); }
+.fy-kpi-unit { font-size:0.65rem; color:var(--muted); margin-top:3px; }
+
+/* CHART GRIDS */
+.chart-grid  { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.chart-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+@media(max-width:1100px){ .chart-grid3 { grid-template-columns:1fr 1fr; } }
+@media(max-width:860px) { .chart-grid,.chart-grid3 { grid-template-columns:1fr; } }
+.chart-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px 20px; }
+.chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.chart-title { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); }
+.chart-badge { font-size:0.65rem; background:var(--surface2); color:var(--muted); padding:3px 8px; border-radius:10px; }
+
+/* TABLE */
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:auto; margin-bottom:20px; }
+table { width:100%; border-collapse:collapse; font-size:0.82rem; min-width:600px; }
+thead tr { background:var(--surface2); }
+th { padding:10px 14px; text-align:left; color:var(--muted); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+td { padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#ffffff06; }
+.footer { text-align:center; padding:24px; font-size:0.7rem; color:var(--muted); border-top:1px solid var(--border); margin-top:24px; }
+</style>
+</head>
+<body>
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-box">PKS</div>
+    <div>
+      <div class="header-title">PRINTING SECTION — 3-YEAR KPI COMPARISON</div>
+      <div class="header-sub">KBA-1 · KBA-2 · KBA-3 · CX-1 · CX-2 &nbsp;|&nbsp; FY 2023-24 · 2024-25 · 2025-26</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="fy-legend">
+      <span class="fy-dot"><span class="dot" style="background:var(--fy1)"></span>FY 2023-24</span>
+      <span class="fy-dot"><span class="dot" style="background:var(--fy2)"></span>FY 2024-25</span>
+      <span class="fy-dot"><span class="dot" style="background:var(--fy3)"></span>FY 2025-26</span>
+    </div>
+    <button class="btn btn-refresh" onclick="location.reload()">&#8635; Refresh</button>
+    <a class="btn btn-dash" id="dashLink" href="#" target="_blank">&#9632; Dashboard</a>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <span class="filter-label">Filter:</span>
+  <select class="filter-select" id="fMachine" onchange="applyFilters()"><option value="">All Machines</option></select>
+  <select class="filter-select" id="fFY"      onchange="applyFilters()"><option value="">All Financial Years</option></select>
+  <button class="btn-reset" onclick="resetFilters()">&#10006; Reset</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- FY SUMMARY KPI CARDS -->
+  <div class="section-title">Financial Year KPI Summary</div>
+  <div class="fy-grid">
+    <div class="fy-card fy1">
+      <div class="fy-title">FY 2023-24</div>
+      <div class="fy-kpis">
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg MTBF</div><div class="fy-kpi-val" id="fy1_mtbf">--</div><div class="fy-kpi-unit">hours</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg MTTR</div><div class="fy-kpi-val" id="fy1_mttr">--</div><div class="fy-kpi-unit">minutes</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Total BD</div><div class="fy-kpi-val" id="fy1_bd">--</div><div class="fy-kpi-unit">events</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg Availability</div><div class="fy-kpi-val" id="fy1_avail">--</div><div class="fy-kpi-unit">%</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Total Downtime</div><div class="fy-kpi-val" id="fy1_down">--</div><div class="fy-kpi-unit">hours</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Breakdown %</div><div class="fy-kpi-val" id="fy1_bdpct">--</div><div class="fy-kpi-unit">%</div></div>
+      </div>
+    </div>
+    <div class="fy-card fy2">
+      <div class="fy-title">FY 2024-25</div>
+      <div class="fy-kpis">
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg MTBF</div><div class="fy-kpi-val" id="fy2_mtbf">--</div><div class="fy-kpi-unit">hours</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg MTTR</div><div class="fy-kpi-val" id="fy2_mttr">--</div><div class="fy-kpi-unit">minutes</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Total BD</div><div class="fy-kpi-val" id="fy2_bd">--</div><div class="fy-kpi-unit">events</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg Availability</div><div class="fy-kpi-val" id="fy2_avail">--</div><div class="fy-kpi-unit">%</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Total Downtime</div><div class="fy-kpi-val" id="fy2_down">--</div><div class="fy-kpi-unit">hours</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Breakdown %</div><div class="fy-kpi-val" id="fy2_bdpct">--</div><div class="fy-kpi-unit">%</div></div>
+      </div>
+    </div>
+    <div class="fy-card fy3">
+      <div class="fy-title">FY 2025-26</div>
+      <div class="fy-kpis">
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg MTBF</div><div class="fy-kpi-val" id="fy3_mtbf">--</div><div class="fy-kpi-unit">hours</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg MTTR</div><div class="fy-kpi-val" id="fy3_mttr">--</div><div class="fy-kpi-unit">minutes</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Total BD</div><div class="fy-kpi-val" id="fy3_bd">--</div><div class="fy-kpi-unit">events</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Avg Availability</div><div class="fy-kpi-val" id="fy3_avail">--</div><div class="fy-kpi-unit">%</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Total Downtime</div><div class="fy-kpi-val" id="fy3_down">--</div><div class="fy-kpi-unit">hours</div></div>
+        <div class="fy-kpi"><div class="fy-kpi-lbl">Breakdown %</div><div class="fy-kpi-val" id="fy3_bdpct">--</div><div class="fy-kpi-unit">%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONTHLY TREND CHARTS -->
+  <div class="section-title">Monthly Trend Comparison (All 3 FYs)</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">MTTR Monthly Trend</span><span class="chart-badge">MIN</span></div>
+      <canvas id="chartMTTR" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">MTBF Monthly Trend</span><span class="chart-badge">HRS</span></div>
+      <canvas id="chartMTBF" height="200"></canvas>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Availability % Monthly Trend</span><span class="chart-badge">%</span></div>
+      <canvas id="chartAvail" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Monthly Breakdown Count</span><span class="chart-badge">COUNT</span></div>
+      <canvas id="chartBD" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- MACHINE COMPARISON CHARTS -->
+  <div class="section-title">Machine-wise Comparison (Per FY)</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">MTBF by Machine</span><span class="chart-badge">HRS</span></div>
+      <canvas id="chartMachMTBF" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">MTTR by Machine</span><span class="chart-badge">MIN</span></div>
+      <canvas id="chartMachMTTR" height="200"></canvas>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Availability % by Machine</span><span class="chart-badge">%</span></div>
+      <canvas id="chartMachAvail" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Total Breakdowns by Machine</span><span class="chart-badge">COUNT</span></div>
+      <canvas id="chartMachBD" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- DRILLDOWN TABLE -->
+  <div class="section-title">Drilldown Table — Machine × Month × FY</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>FY</th><th>Month</th><th>Machine</th><th>MTBF (hrs)</th><th>MTTR (min)</th><th>BD Count</th><th>Downtime (hrs)</th><th>Availability %</th><th>BD %</th></tr></thead>
+      <tbody id="drillTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer">Parksons Packaging Ltd &nbsp;|&nbsp; Printing Section KPI Analysis &nbsp;|&nbsp; FY 2023-24 · 2024-25 · 2025-26</div>
+
+<script>
+var KPI_DATA = JSON.parse('<?= kpiJson ?>'.replace(/\\'/g,"'"));
+var BASE_URL = '<?= baseUrl ?>';
+document.getElementById('dashLink').href = BASE_URL + '?page=dashboard';
+
+var allRows = (KPI_DATA && KPI_DATA.rows) ? KPI_DATA.rows : [];
+var filteredRows = allRows.slice();
+
+var FYS     = ['2023-24','2024-25','2025-26'];
+var FY_CLR  = { '2023-24':'#2d7bf4', '2024-25':'#f0a500', '2025-26':'#1fc67a' };
+var MONTHS  = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+var MACHINES= ['KBA-1','KBA-2','KBA-3','CX-1','CX-2'];
+
+// Populate filters
+function fillSel(id, opts) {
+  var s = document.getElementById(id);
+  opts.forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); });
+}
+fillSel('fMachine', MACHINES);
+fillSel('fFY', FYS);
+
+function applyFilters() {
+  var fm = document.getElementById('fMachine').value;
+  var ff = document.getElementById('fFY').value;
+  filteredRows = allRows.filter(function(r){
+    return (!fm || r.machine===fm) && (!ff || r.fy===ff);
+  });
+  renderKPICards();
+  renderCharts();
+  renderDrillTable();
+}
+
+function resetFilters() {
+  document.getElementById('fMachine').value = '';
+  document.getElementById('fFY').value = '';
+  applyFilters();
+}
+
+// ── KPI CARDS ──
+function renderKPICards() {
+  FYS.forEach(function(fy, idx) {
+    var rows = filteredRows.filter(function(r){ return r.fy===fy; });
+    var n    = idx+1;
+    if (!rows.length) {
+      ['mtbf','mttr','bd','avail','down','bdpct'].forEach(function(k){ set('fy'+n+'_'+k,'--'); });
+      return;
+    }
+    var totalBD   = rows.reduce(function(s,r){ return s+r.bdCount; },0);
+    var totalDown = rows.reduce(function(s,r){ return s+r.bdTime; },0);
+    var avgMTTR   = totalBD>0 ? (totalDown/totalBD) : 0;
+    var totalUp   = rows.reduce(function(s,r){ return s+r.uptime; },0);
+    var avgMTBF   = totalBD>0 ? (totalUp/totalBD) : 0;
+    var avgAvail  = rows.reduce(function(s,r){ return s+r.availability; },0)/rows.length;
+    var bdPct     = (avgMTBF+avgMTTR)>0 ? (avgMTTR/(avgMTBF+avgMTTR)*100) : 0;
+    set('fy'+n+'_mtbf',  (avgMTBF/60).toFixed(1));
+    set('fy'+n+'_mttr',  avgMTTR.toFixed(1));
+    set('fy'+n+'_bd',    totalBD);
+    set('fy'+n+'_avail', avgAvail.toFixed(2));
+    set('fy'+n+'_down',  (totalDown/60).toFixed(1));
+    set('fy'+n+'_bdpct', bdPct.toFixed(2));
+  });
+}
+function set(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+
+// ── CHARTS ──
+var CH = {};
+function dc(id){ if(CH[id]){CH[id].destroy();delete CH[id];} }
+
+function getMonthlyData(fy, metric) {
+  return MONTHS.map(function(mo){
+    var rows = filteredRows.filter(function(r){ return r.fy===fy && r.month.indexOf(mo)===0; });
+    if (!rows.length) return null;
+    if (metric==='mttr') {
+      var bd=rows.reduce(function(s,r){return s+r.bdCount;},0);
+      var dt=rows.reduce(function(s,r){return s+r.bdTime;},0);
+      return bd>0 ? +(dt/bd).toFixed(1) : null;
+    }
+    if (metric==='mtbf') {
+      var bd2=rows.reduce(function(s,r){return s+r.bdCount;},0);
+      var up=rows.reduce(function(s,r){return s+r.uptime;},0);
+      return bd2>0 ? +((up/bd2)/60).toFixed(1) : null;
+    }
+    if (metric==='avail') return +(rows.reduce(function(s,r){return s+r.availability;},0)/rows.length).toFixed(2);
+    if (metric==='bd')    return rows.reduce(function(s,r){return s+r.bdCount;},0);
+    return null;
+  });
+}
+
+function getMachineData(fy, metric) {
+  return MACHINES.map(function(mc){
+    var rows = filteredRows.filter(function(r){ return r.fy===fy && r.machine===mc; });
+    if (!rows.length) return 0;
+    if (metric==='mttr') { var bd=rows.reduce(function(s,r){return s+r.bdCount;},0); var dt=rows.reduce(function(s,r){return s+r.bdTime;},0); return bd>0?+(dt/bd).toFixed(1):0; }
+    if (metric==='mtbf') { var bd2=rows.reduce(function(s,r){return s+r.bdCount;},0); var up=rows.reduce(function(s,r){return s+r.uptime;},0); return bd2>0?+((up/bd2)/60).toFixed(1):0; }
+    if (metric==='avail') return +(rows.reduce(function(s,r){return s+r.availability;},0)/rows.length).toFixed(2);
+    if (metric==='bd')    return rows.reduce(function(s,r){return s+r.bdCount;},0);
+    return 0;
+  });
+}
+
+function lineDatasets(metric) {
+  return FYS.map(function(fy){
+    return { label:'FY '+fy, data:getMonthlyData(fy,metric), borderColor:FY_CLR[fy], backgroundColor:FY_CLR[fy]+'22', borderWidth:2.5, pointRadius:4, pointBackgroundColor:FY_CLR[fy], fill:false, tension:0.35, spanGaps:true };
+  });
+}
+
+function barDatasets(metric) {
+  return FYS.map(function(fy){
+    return { label:'FY '+fy, data:getMachineData(fy,metric), backgroundColor:FY_CLR[fy]+'99', borderColor:FY_CLR[fy], borderWidth:1, borderRadius:4 };
+  });
+}
+
+var scaleOpts = { x:{ticks:{color:'#6b7a99',font:{size:10}},grid:{color:'#1e2a3d'}}, y:{ticks:{color:'#6b7a99',font:{size:10}},grid:{color:'#1e2a3d'},beginAtZero:true} };
+var legendOpts = { labels:{color:'#6b7a99',font:{size:11}} };
+
+function renderCharts() {
+  dc('mttr');
+  CH['mttr'] = new Chart(document.getElementById('chartMTTR'),{type:'line',data:{labels:MONTHS,datasets:lineDatasets('mttr')},options:{responsive:true,plugins:{legend:legendOpts},scales:scaleOpts}});
+
+  dc('mtbf');
+  CH['mtbf'] = new Chart(document.getElementById('chartMTBF'),{type:'line',data:{labels:MONTHS,datasets:lineDatasets('mtbf')},options:{responsive:true,plugins:{legend:legendOpts},scales:scaleOpts}});
+
+  dc('avail');
+  var availScales = JSON.parse(JSON.stringify(scaleOpts));
+  availScales.y.min = 80; availScales.y.max = 100;
+  CH['avail'] = new Chart(document.getElementById('chartAvail'),{type:'line',data:{labels:MONTHS,datasets:lineDatasets('avail')},options:{responsive:true,plugins:{legend:legendOpts},scales:availScales}});
+
+  dc('bd');
+  CH['bd'] = new Chart(document.getElementById('chartBD'),{type:'bar',data:{labels:MONTHS,datasets:FYS.map(function(fy){ return {label:'FY '+fy,data:getMonthlyData(fy,'bd'),backgroundColor:FY_CLR[fy]+'99',borderColor:FY_CLR[fy],borderWidth:1,borderRadius:3}; })},options:{responsive:true,plugins:{legend:legendOpts},scales:scaleOpts}});
+
+  dc('machMTBF');
+  CH['machMTBF'] = new Chart(document.getElementById('chartMachMTBF'),{type:'bar',data:{labels:MACHINES,datasets:barDatasets('mtbf')},options:{responsive:true,plugins:{legend:legendOpts},scales:scaleOpts}});
+
+  dc('machMTTR');
+  CH['machMTTR'] = new Chart(document.getElementById('chartMachMTTR'),{type:'bar',data:{labels:MACHINES,datasets:barDatasets('mttr')},options:{responsive:true,plugins:{legend:legendOpts},scales:scaleOpts}});
+
+  dc('machAvail');
+  var maScales = JSON.parse(JSON.stringify(scaleOpts));
+  maScales.y.min = 80;
+  CH['machAvail'] = new Chart(document.getElementById('chartMachAvail'),{type:'bar',data:{labels:MACHINES,datasets:barDatasets('avail')},options:{responsive:true,plugins:{legend:legendOpts},scales:maScales}});
+
+  dc('machBD');
+  CH['machBD'] = new Chart(document.getElementById('chartMachBD'),{type:'bar',data:{labels:MACHINES,datasets:barDatasets('bd')},options:{responsive:true,plugins:{legend:legendOpts},scales:scaleOpts}});
+}
+
+// ── DRILLDOWN TABLE ──
+function renderDrillTable() {
+  var sorted = filteredRows.slice().sort(function(a,b){
+    if(a.fy!==b.fy) return a.fy<b.fy?-1:1;
+    var ia=MONTHS.indexOf(a.month.substring(0,3)), ib=MONTHS.indexOf(b.month.substring(0,3));
+    if(ia!==ib) return ia-ib;
+    return MACHINES.indexOf(a.machine)-MACHINES.indexOf(b.machine);
+  });
+  var clr = {'2023-24':'var(--fy1)','2024-25':'var(--fy2)','2025-26':'var(--fy3)'};
+  document.getElementById('drillTable').innerHTML = sorted.map(function(r){
+    var bdPct = (r.mtbf+r.mttr)>0 ? (r.mttr/(r.mtbf+r.mttr)*100).toFixed(2) : '--';
+    return '<tr>'+
+      '<td style="color:'+clr[r.fy]+';font-weight:600;">'+r.fy+'</td>'+
+      '<td>'+r.month+'</td>'+
+      '<td><strong>'+r.machine+'</strong></td>'+
+      '<td style="text-align:center;color:var(--blue);">'+(r.mtbf/60).toFixed(1)+'</td>'+
+      '<td style="text-align:center;color:var(--accent);">'+r.mttr.toFixed(1)+'</td>'+
+      '<td style="text-align:center;color:var(--red);">'+r.bdCount+'</td>'+
+      '<td style="text-align:center;">'+(r.bdTime/60).toFixed(1)+'</td>'+
+      '<td style="text-align:center;color:'+(r.availability>=99?'var(--green)':r.availability>=97?'var(--accent)':'var(--red)')+';">'+r.availability.toFixed(2)+'%</td>'+
+      '<td style="text-align:center;">'+bdPct+'%</td>'+
+      '</tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">No data</td></tr>';
+}
+
+// ── INIT ──
+applyFilters();
+</script>
+</body>
+</html>

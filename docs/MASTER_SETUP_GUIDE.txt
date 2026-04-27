@@ -1,0 +1,294 @@
+================================================================
+PARKSONS MAINTENANCE SYSTEM — MASTER SETUP & FIX GUIDE
+Version: 3.1 FINAL | Date: 28 March 2026
+================================================================
+
+YOUR ACTIVE DEPLOYMENT URL (use this everywhere):
+https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec
+
+YOUR 3 WORKING URLS:
+  Dashboard  : ...exec?page=dashboard
+  Admin Panel: ...exec?page=admin
+  Form POST  : ...exec  (POST from HTML form)
+
+OLD URL (ignore — do not use):
+https://script.google.com/macros/s/AKfycbyyEmAPLYTTgUTSON6CbnuajBZ72nYhQv2FJZrN_58yBXwXIYr_m4Q6GgvWdqMSTk2I/exec
+
+================================================================
+DIAGNOSIS — WHY THINGS WERE NOT WORKING
+================================================================
+
+Problem 1: TWO deployment URLs
+  You had two deployments with different IDs:
+  - Old: AKfycbyy... (original, showing old code/no live data)
+  - New: AKfycbzs... (current, correct one)
+  The Dashboard URL you bookmarked was the OLD one.
+  FIX: Always use the NEW URL (AKfycbzs...) for everything.
+
+Problem 2: Google Sheet menu "Open Dashboard" was failing
+  Cause: ScriptApp.getService().getUrl() inside the script
+  sometimes returns the wrong URL in Apps Script.
+  FIX: Code v3.1 uses a hardcoded deploymentUrl in CONFIG
+  so the menu always opens the correct URL.
+
+Problem 3: Dashboard not showing live data
+  Cause: Dashboard.html was reading from Final_Data but
+  the old URL was serving cached old HTML with no data injection.
+  FIX: Use the correct deployment URL. Data flows correctly.
+
+Problem 4: Dashboard showing ALL entries (including rejected)
+  FIX: Code v3.1 filters — only APPROVED entries show in
+  Dashboard KPIs, charts, and tables. Pending/Rejected are
+  invisible to the dashboard.
+
+Problem 5: Admin Panel from Google Sheet menu gave error
+  Cause: Same wrong URL issue as Problem 2.
+  FIX: Hardcoded URL in Code v3.1.
+
+Problem 6: HTML form SCRIPT_URL still pointed to old URL
+  FIX: See Section below — update one line in your HTML form.
+
+================================================================
+STEP 1 — UPDATE CODE.GS IN APPS SCRIPT (5 minutes)
+================================================================
+
+1. Open Apps Script:
+   https://script.google.com/u/0/home/projects/1r4h6p9Lf_YiGe6_h4s3SdBaxCzPAfKxj07CDCECHWMVPULzMSv-aRmrY/edit
+
+2. Click Code.gs in left panel
+
+3. Press Ctrl+A → Delete all existing code
+
+4. Open file: Code_v31_FINAL.gs
+   Press Ctrl+A → Ctrl+C to copy
+
+5. Click back in Apps Script → Ctrl+V to paste → Ctrl+S to save
+
+6. Verify: No red error shown at bottom
+
+================================================================
+STEP 2 — REDEPLOY AS NEW VERSION (3 minutes)
+================================================================
+
+1. In Apps Script → Click Deploy → Manage Deployments
+
+2. Click pencil (Edit) icon on your existing deployment
+
+3. Version dropdown → Select "New version"
+
+4. Description: "v3.1 — approval workflow, fixed URLs"
+
+5. Execute as: Me (yogeshkp85@gmail.com) — KEEP SAME
+   Who has access: Anyone — KEEP SAME
+
+6. Click Deploy
+
+IMPORTANT: The URL stays the same (AKfycbzs...) — no need
+to update anything else after this step.
+
+================================================================
+STEP 3 — UPDATE YOUR HTML FORM FILE (2 minutes)
+================================================================
+
+Your HTML form file is at:
+  E:\System development\Parksons_Maintenance_Form_v3.html
+
+Open this file in Notepad (right-click → Open with → Notepad)
+
+Search for (Ctrl+F):
+  SCRIPT_URL
+
+You will find a line that looks like:
+  var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyy.../exec";
+  (the OLD URL starting with AKfycbyy)
+
+Replace the ENTIRE URL inside the quotes with:
+  https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec
+
+So the line should now read:
+  var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec";
+
+Save the file (Ctrl+S)
+
+That is the ONLY change needed in the HTML form file.
+Everything else — dropdowns, fields, layout — stays the same.
+
+Share the updated HTML file with your technicians
+(WhatsApp, email, or put it on shared drive).
+
+================================================================
+STEP 4 — TEST THE FULL WORKFLOW (5 minutes)
+================================================================
+
+Test 1 — Form Submission
+  1. Open your HTML form in browser
+  2. Fill in all fields
+  3. Click Submit
+  4. Check Raw_Data in Google Sheet → new row with Status = PENDING_REVIEW
+
+Test 2 — Admin Panel
+  Open: https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec?page=admin
+  Password: PKS@2026
+  → You should see the pending entry from Test 1
+  → Click "Approve As-Is" → Status changes to APPROVED in sheet
+
+Test 3 — Dashboard
+  Open: https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec?page=dashboard
+  → You should now see the approved entry in KPIs and charts
+  → Pending/Rejected entries do NOT appear here
+
+Test 4 — Google Sheet Menu
+  Open Google Sheet → Reload page
+  → "Maintenance System" menu appears
+  → Click "Open Live Dashboard" → opens correct URL
+  → Click "Open Admin Panel" → opens Admin Panel with login
+
+================================================================
+STEP 5 — VERIFY DASHBOARD HTML FILES IN APPS SCRIPT
+================================================================
+
+In Apps Script left panel, you should have exactly 3 files:
+  Code.gs         ← your main script (just updated)
+  Dashboard.html  ← existing dashboard template (no change needed)
+  Admin.html      ← admin panel template (no change needed)
+
+If Dashboard.html or Admin.html are missing — re-add them
+using the files from the previous build session.
+
+================================================================
+FINAL SYSTEM ARCHITECTURE
+================================================================
+
+TECHNICIAN (phone/PC)
+    ↓ fills HTML form
+    ↓ submits
+
+HTML Form (E:\...\Parksons_Maintenance_Form_v3.html)
+    ↓ POST to SCRIPT_URL
+
+Google Apps Script (doPost)
+    ↓ writes row with Status = PENDING_REVIEW
+
+Raw_Data (Google Sheet)
+    ↓ ARRAYFORMULA reads all rows
+
+Final_Data (Google Sheet)
+    ↓ cleaned date, time, duration, min, BD_flag etc.
+
+ADMIN (Yogesh — phone/PC)
+    ↓ opens Admin Panel URL
+    ↓ logs in with PKS@2026
+    ↓ reviews entry (edit if needed)
+    ↓ clicks Approve or Reject
+
+    [APPROVED] → Dashboard reads only APPROVED entries
+    [REJECTED] → Flagged in sheet, not shown in dashboard
+
+Dashboard (live URL)
+    ↓ KPI cards: MTTR, MTBF, Availability%, BD Count, Downtime
+    ↓ 6 charts + machine table + entries table
+    ↓ Filters: Month, Dept, Machine, Shift, Category
+    ↓ Works on phone, tablet, PC
+
+Daily Email (8 AM automatic — set trigger)
+    → Summary of previous day
+    → Links to Dashboard and Admin Panel
+
+================================================================
+BOOKMARK LIST (save these on your phone)
+================================================================
+
+Dashboard:
+https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec?page=dashboard
+
+Admin Panel:
+https://script.google.com/macros/s/AKfycbzsMfr4NRuSkH8zQnPxZeaw4EnBIvTHXj-4O210a2ICbD4JF6s/exec?page=admin
+
+Admin Password: PKS@2026
+
+Google Sheet:
+https://docs.google.com/spreadsheets/d/1AT_Sil0sN5xUADNkuOz2ns01gXlawWlqyidkL4BNG7c
+
+Apps Script:
+https://script.google.com/u/0/home/projects/1r4h6p9Lf_YiGe6_h4s3SdBaxCzPAfKxj07CDCECHWMVPULzMSv-aRmrY/edit
+
+================================================================
+FULL PROJECT SUMMARY (for handover or re-setup anywhere)
+================================================================
+
+WHAT WAS BUILT:
+  A complete maintenance data pipeline for Parksons Packaging Ltd
+  that replaces manual Excel data entry with a web-based system.
+
+COMPONENTS:
+  1. HTML Form (Parksons_Maintenance_Form_v3.html)
+     - Offline-capable web form for shift technicians
+     - Fields: Date, Shift, Machine Type/Name, Unit, Problem Type,
+       Category, Description, Action Taken, Root Cause,
+       Time Start, Time End, Attended By, Remarks
+     - Dropdowns for all major fields (no spelling errors)
+     - Offline queue — submits even if internet drops briefly
+     - Sends data to Google Sheet via Apps Script
+
+  2. Google Sheet (Raw_Data tab)
+     - Receives all form submissions
+     - Status column: PENDING_REVIEW → APPROVED / REJECTED
+     - 19 columns: Timestamp to Status
+
+  3. Google Sheet (Final_Data tab)
+     - ARRAYFORMULA auto-cleans date, time, repair duration
+     - Calculates: Total_Repair_Time, Minutes, BD_Flag,
+       Available_Time_Min, Month_Year
+     - Updates automatically — no manual action
+
+  4. Google Apps Script (Code.gs + Dashboard.html + Admin.html)
+     - doPost: receives form data → writes to Raw_Data
+     - doGet?page=dashboard: serves live dashboard
+     - doGet?page=admin: serves admin panel (password protected)
+     - Admin actions: Approve, Reject, Edit+Approve, Save edits
+     - Daily email report at 8 AM (set trigger manually)
+
+  5. Live Dashboard (?page=dashboard)
+     - Shows only APPROVED entries
+     - 5 KPI cards: Avg MTTR, Avg MTBF, Total Downtime,
+       Breakdown Count, Avg Availability%
+     - 6 charts: Monthly trend, Category pie, MTTR trend,
+       Dept breakdown, Shift polar, Top 10 machines
+     - Machine availability table with color-coded bars
+     - Recent entries table (latest 100)
+     - Filters: Month, Department, Machine, Shift, Category
+     - Works on phone, tablet, PC — no login required
+
+  6. Admin Panel (?page=admin)
+     - Password protected (PKS@2026)
+     - 4 tabs: Pending / All / Approved / Rejected
+     - Stats: live count of each status
+     - Each entry expands inline for editing
+     - Actions: Approve As-Is, Edit+Approve, Save Edits, Reject
+     - Bulk approve all pending
+
+CALCULATIONS:
+  MTTR = Total Breakdown minutes / Breakdown count (per filter)
+  MTBF = (Available time - BD downtime) / BD count (per machine/month)
+  Availability% = (Available time - All downtime) / Available time × 100
+  Available time = 24hrs × days in month × 60 min (full calendar month)
+
+WHAT IS PENDING / FUTURE PHASES:
+  - Phase 2 option: Looker Studio dashboard (richer mobile view)
+  - Phase 2 option: Power Query into Excel for management reports
+  - Daily email trigger needs to be set manually in Apps Script
+    (Triggers → sendDailyEmailReport → Time-driven → 8am-9am)
+  - Config tab in Google Sheet for adding machines/technicians
+    without touching code (future enhancement)
+
+KNOWN BEHAVIOUR:
+  - Entries submitted by technicians appear in Raw_Data immediately
+  - They do NOT appear in the Dashboard until admin approves them
+  - Rejected entries are visible in Admin Panel (Rejected tab)
+    but never appear in Dashboard calculations
+  - Final_Data ARRAYFORMULA updates automatically — no manual refresh
+  - Dashboard data refreshes every time the page is loaded
+
+================================================================
+END OF MASTER SETUP GUIDE
+================================================================

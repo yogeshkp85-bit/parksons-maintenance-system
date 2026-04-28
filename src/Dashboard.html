@@ -237,6 +237,19 @@ tr:hover td { background:#ffffff06; }
     </table>
   </div>
 
+  <!-- ERROR INFORMATION -->
+  <div class="section-title">System Health &amp; Recent Errors</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Recent Errors (Last 5)</span><span class="chart-badge" id="errorCount">0</span></div>
+      <div id="errorWidget" style="font-size:0.8rem;color:var(--muted)">Loading...</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><span class="chart-title">Error Summary by Function</span><span class="chart-badge">TOP 5</span></div>
+      <div id="errorSummary" style="font-size:0.8rem;color:var(--muted)">Loading...</div>
+    </div>
+  </div>
+
   <!-- RECENT ENTRIES -->
   <div class="section-title">Recent Entries (Last 50)</div>
   <div class="table-wrap">
@@ -557,8 +570,73 @@ function updateCharts(rows) {
   CH['top10']=new Chart(document.getElementById('chartTop10'),{type:'bar',data:{labels:t10L,datasets:[{label:'Downtime (min)',data:t10L.map(function(m){return t10[m];}),backgroundColor:'rgba(232,64,64,0.7)',borderColor:'#e84040',borderWidth:1,borderRadius:3}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
 }
 
+// ── ERROR MONITORING ──
+function loadErrorsForDashboard() {
+  var baseUrl = ADMIN_URL.replace('?page=admin', '');
+  fetch(baseUrl + '?action=getErrorsForDisplay&limit=5', { method:'GET', cache:'no-store' })
+  .then(function(r){ return r.text(); })
+  .then(function(text) {
+    var data;
+    try { data = JSON.parse(text); } catch(e) { return; }
+    if (data.status === 'success' && data.errors) {
+      renderErrorWidget(data.errors);
+    }
+  })
+  .catch(function(e) { console.log('Error loading errors:', e); });
+}
+
+function renderErrorWidget(errors) {
+  var widget = document.getElementById('errorWidget');
+  var summary = document.getElementById('errorSummary');
+  var badge = document.getElementById('errorCount');
+  
+  if (!errors || errors.length === 0) {
+    widget.innerHTML = '<div style="padding:10px;color:var(--green)">✓ No recent errors</div>';
+    summary.innerHTML = '<div style="padding:10px;color:var(--green)">System running smoothly</div>';
+    badge.textContent = '0';
+    return;
+  }
+  
+  badge.textContent = errors.length;
+  
+  // Recent errors list
+  var errorHtml = '<div style="padding:10px">';
+  errors.forEach(function(e) {
+    var time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : 'N/A';
+    errorHtml += '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:0.75rem">' +
+      '<span style="color:var(--red);font-weight:600">'+escapeHtml(e.functionName)+'</span><br>' +
+      '<span style="color:var(--muted)">'+time+'</span><br>' +
+      '<span style="color:var(--text)">'+escapeHtml(e.errorMessage.substring(0,60))+'...</span>' +
+    '</div>';
+  });
+  errorHtml += '</div>';
+  widget.innerHTML = errorHtml;
+  
+  // Error summary by function
+  var funcCount = {};
+  errors.forEach(function(e) {
+    funcCount[e.functionName] = (funcCount[e.functionName] || 0) + 1;
+  });
+  var topFuncs = Object.keys(funcCount).sort(function(a,b){ return funcCount[b]-funcCount[a]; }).slice(0,5);
+  var summaryHtml = '<div style="padding:10px">';
+  topFuncs.forEach(function(f) {
+    summaryHtml += '<div style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border)">' +
+      '<span style="color:var(--text)">'+escapeHtml(f)+'</span>' +
+      '<span style="color:var(--red);font-weight:600">'+funcCount[f]+'</span>' +
+    '</div>';
+  });
+  summaryHtml += '</div>';
+  summary.innerHTML = summaryHtml;
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ── INITIAL RENDER ──
 applyFilters();
+loadErrorsForDashboard();
 </script>
 </body>
 </html>

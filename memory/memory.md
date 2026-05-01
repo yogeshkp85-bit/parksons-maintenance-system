@@ -644,3 +644,55 @@ Frontend (Dashboard.html):
 
 **Status**: ✅ COMPLETE - READY FOR TESTING
 
+
+
+---
+
+## 📊 PHASE 8: DASHBOARD INTERACTIVE FEATURES - SPEC REFINEMENT (v3.21 - 2026-05-01)
+
+### ✅ COMPLETED
+
+**Objective**: Refine the dashboard interactive features spec to match user's clean structure requirements.
+
+**Changes Made**:
+
+1. **Spec Narrowed to Core Features Only**:
+   - Removed: Chart interactivity, export functionality, extensive logging, performance optimization, accessibility features, browser compatibility tests
+   - Kept: FY filter, pending table, drill-down modal, alert system
+   - Reason: User emphasized "Proceed only with this scope. Do NOT add extra features"
+
+2. **Tasks Reorganized into 7 Focused Phases**:
+   - Phase 1: Backend Data Structure (Code.gs updates)
+   - Phase 2: Frontend - FY Filter
+   - Phase 3: Frontend - Pending Entries Table
+   - Phase 4: Frontend - Drill-Down Modal
+   - Phase 5: Frontend - Alert System
+   - Phase 6: Integration & Testing
+   - Phase 7: Deployment
+
+3. **Key Requirements Emphasized**:
+   - Backend controls data logic, frontend displays only
+   - Pending entries completely separate from approved entries
+   - KPI calculations use ONLY Final_Data (approved entries)
+   - No mixing of data streams
+   - Step-by-step implementation
+
+4. **New Alert System Added**:
+   - MTTR threshold alert (> 60 minutes)
+   - Breakdown count alert (> 5 in last 30 days)
+   - Availability target alert (< 95%)
+   - Color coding: RED (critical), ORANGE (warning), GREEN (ok)
+
+5. **Acceptance Criteria Added**:
+   - Each task has clear acceptance criteria
+   - Performance targets specified: FY filter < 1s, modal < 500ms, alerts < 500ms
+   - Data separation verified throughout
+
+**Status**: ✅ SPEC REFINEMENT COMPLETE - READY FOR IMPLEMENTATION
+
+**Next Steps**:
+1. User can now begin implementation with Task 1.1 (Backend Data Structure)
+2. Each phase builds on previous phases
+3. Step-by-step approach allows for incremental testing
+4. All tasks have clear acceptance criteria
+

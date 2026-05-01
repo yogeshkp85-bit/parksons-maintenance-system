@@ -36,7 +36,7 @@ var COL = {
   STATUS:       18
 };
 
-var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbxo4lP2xog4XD-NoCCFUZdYw0V_ADiCNNKvssoAIvMyC7xMO8_NZSt7I81jckhHCkjz/exec';
+var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbxX596sq5C-eRtAAfOAxAZrRSEozLSs94mUgpXAfcupXRurHHTIfKSw_COb2o/exec';
 
 function getBaseUrl() {
   return DEPLOYMENT_URL;
@@ -464,15 +464,24 @@ function getDashboardData() {
     return r.status === 'APPROVED' || r.status === 'PENDING_REVIEW';
   }).slice(-50).reverse();
   
+  // Get PENDING entries only
+  var pendingData = rawData.filter(function(r) {
+    return r.status === 'PENDING_REVIEW';
+  }).slice(-50).reverse();
+  
   // Calculate KPI from APPROVED data only
   var kpiData = calculateDashboardKPI(approvedData);
+  
+  // Calculate alerts
+  var alerts = calculateAlerts(approvedData);
   
   return {
     error: null,
     approvedData: approvedData,
-    rawData: rawData,
+    pendingData: pendingData,
     last50: last50,
     kpiData: kpiData,
+    alerts: alerts,
     generated: new Date().toISOString()
   };
 }
@@ -509,6 +518,74 @@ function calculateDashboardKPI(approvedData) {
     avgAvailability: Math.round(avgAvailability * 100) / 100,
     pendingCount: 0
   };
+}
+
+// HELPER: Calculate alerts from approved data
+function calculateAlerts(approvedData) {
+  var alerts = [];
+  
+  if (!approvedData || approvedData.length === 0) {
+    return alerts;
+  }
+  
+  var bdEntries = approvedData.filter(function(r) { return r.bdFlag === 1; });
+  var totalDowntimeMin = bdEntries.reduce(function(s, r) { return s + r.minutes; }, 0);
+  var totalAvailableMin = approvedData.reduce(function(s, r) { return s + r.availableMin; }, 0);
+  var totalRunningMin = totalAvailableMin - totalDowntimeMin;
+  
+  var avgMTTR = bdEntries.length > 0 ? (totalDowntimeMin / bdEntries.length) : 0;
+  var avgMTBF = bdEntries.length > 0 ? (totalRunningMin / bdEntries.length) : 0;
+  var avgAvailability = totalAvailableMin > 0 ? ((totalAvailableMin - totalDowntimeMin) / totalAvailableMin * 100) : 100;
+  
+  // Alert 1: MTTR threshold (> 60 minutes)
+  if (avgMTTR > 60) {
+    alerts.push({
+      type: 'MTTR',
+      severity: 'RED',
+      message: 'High MTTR: Average repair time exceeds 60 minutes',
+      value: Math.round(avgMTTR * 100) / 100,
+      threshold: 60,
+      unit: 'min'
+    });
+  }
+  
+  // Alert 2: Breakdown count (> 5 in dataset)
+  if (bdEntries.length > 5) {
+    alerts.push({
+      type: 'BREAKDOWN_COUNT',
+      severity: 'ORANGE',
+      message: 'High breakdown count: More than 5 breakdowns detected',
+      value: bdEntries.length,
+      threshold: 5,
+      unit: 'events'
+    });
+  }
+  
+  // Alert 3: Availability target (< 95%)
+  if (avgAvailability < 95) {
+    alerts.push({
+      type: 'AVAILABILITY',
+      severity: 'RED',
+      message: 'Low availability: Below 95% target',
+      value: Math.round(avgAvailability * 100) / 100,
+      threshold: 95,
+      unit: '%'
+    });
+  }
+  
+  // If no alerts, add a green status alert
+  if (alerts.length === 0) {
+    alerts.push({
+      type: 'STATUS',
+      severity: 'GREEN',
+      message: 'All systems normal',
+      value: 'OK',
+      threshold: null,
+      unit: ''
+    });
+  }
+  
+  return alerts;
 }
 
 // 6. GET ALL ENTRIES FOR ADMIN

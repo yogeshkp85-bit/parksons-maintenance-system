@@ -109,6 +109,7 @@ tr:hover td { background:#ffffff06; }
 <!-- FILTER BAR -->
 <div class="filter-bar">
   <span class="filter-label">Filter:</span>
+  <select class="filter-select" id="fFY"      onchange="applyFilters()"><option value="">All Financial Years</option></select>
   <select class="filter-select" id="fMonth"   onchange="applyFilters()"><option value="">All Months</option></select>
   <select class="filter-select" id="fDept"    onchange="applyFilters()"><option value="">All Departments</option></select>
   <select class="filter-select" id="fMachine" onchange="applyFilters()"><option value="">All Machines</option></select>
@@ -120,6 +121,9 @@ tr:hover td { background:#ffffff06; }
 
 <!-- MAIN -->
 <div class="main">
+  <!-- ALERT PANEL -->
+  <div id="alertPanel" style="display:none; margin-bottom:20px;"></div>
+
   <div class="pending-warn" id="pendingWarn" style="display:none">
     &#9888; <span id="pendingMsg"></span>&nbsp;&mdash;&nbsp;
     <a id="adminLinkWarn" href="#" target="_blank" style="color:var(--accent)">Open Admin Panel to approve</a>
@@ -170,6 +174,15 @@ tr:hover td { background:#ffffff06; }
       <div class="kpi-unit">records</div>
       <div class="kpi-desc">All approved entries</div>
     </div>
+  </div>
+
+  <!-- PENDING ENTRIES TABLE -->
+  <div class="section-title">Pending Entries (Awaiting Approval)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Machine</th><th>Dept</th><th>Unit</th><th>Shift</th><th>Category</th><th>Problem Type</th><th>Description</th><th>Duration (min)</th><th>Attended By</th><th>Action</th></tr></thead>
+      <tbody id="pendingTable"><tr><td colspan="11" class="no-data">No pending entries</td></tr></tbody>
+    </table>
   </div>
 
   <!-- TREND CHARTS -->
@@ -258,12 +271,25 @@ tr:hover td { background:#ffffff06; }
 
 <div class="footer">Parksons Packaging Ltd &nbsp;|&nbsp; Maintenance Intelligence System &nbsp;|&nbsp; Data refreshes on page reload</div>
 
+<!-- DRILL-DOWN MODAL -->
+<div id="drillDownModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="font-size:1.2rem; font-weight:700; color:var(--accent);">Entry Details</h2>
+      <button onclick="closeModal()" style="background:transparent; border:none; color:var(--muted); font-size:1.5rem; cursor:pointer; padding:0; width:30px; height:30px; display:flex; align-items:center; justify-content:center;">✕</button>
+    </div>
+    <div id="modalContent" style="font-size:0.9rem; line-height:1.8;">
+      <!-- Content populated by JavaScript -->
+    </div>
+  </div>
+</div>
+
 <script>
 // ── DATA injected by Apps Script template ──
 var RAW_DATA_JSON = <?= dataJson ?>;
 var ADMIN_URL     = '<?= adminUrl ?>';
 
-var allRows = [], genTime = '--', pendingCount = 0, approvedData = [], last50 = [], kpiData = {};
+var allRows = [], genTime = '--', pendingCount = 0, approvedData = [], last50 = [], kpiData = {}, pendingData = [], alerts = [];
 try {
   var parsed = (typeof RAW_DATA_JSON === 'string') ? JSON.parse(RAW_DATA_JSON) : RAW_DATA_JSON;
   
@@ -271,13 +297,15 @@ try {
   if (parsed && parsed.approvedData) approvedData = parsed.approvedData;
   if (parsed && parsed.last50)       last50       = parsed.last50;
   if (parsed && parsed.kpiData)      kpiData      = parsed.kpiData;
+  if (parsed && parsed.pendingData)  pendingData  = parsed.pendingData;
+  if (parsed && parsed.alerts)       alerts       = parsed.alerts;
   if (parsed && parsed.generated)    genTime      = new Date(parsed.generated).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  if (parsed && parsed.pendingCount) pendingCount = parsed.pendingCount || 0;
+  if (parsed && parsed.pendingCount) pendingCount = parsed.pendingCount || pendingData.length || 0;
   
   // For backward compatibility and filtering, use last50 (which includes APPROVED + PENDING)
   allRows = last50;
   
-  // Add monthYear field for filtering (format: "Apr-23", "May-23", etc.)
+  // Add monthYear and fy field for filtering (format: "Apr-23", "May-23", etc.)
   allRows.forEach(function(r) {
     if (!r.monthYear) {
       var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -288,6 +316,9 @@ try {
         r.monthYear = monthNames[monthIdx] + '-' + yearStr;
       }
     }
+    if (!r.fy && r.fy !== '') {
+      r.fy = r.fy || 'Unknown';
+    }
   });
 } catch(e) { console.error('Data parse error:', e); }
 
@@ -296,7 +327,7 @@ document.getElementById('adminLinkWarn').href = ADMIN_URL;
 document.getElementById('genTime').textContent = 'Generated: ' + genTime;
 if (pendingCount > 0) {
   document.getElementById('pendingWarn').style.display = 'flex';
-  document.getElementById('pendingMsg').textContent = pendingCount + ' entr' + (pendingCount===1?'y':'ies') + ' pending approval — not shown in dashboard';
+  document.getElementById('pendingMsg').textContent = pendingCount + ' entr' + (pendingCount===1?'y':'ies') + ' pending approval';
 }
 
 // ── MONTH ORDER ──
@@ -318,6 +349,7 @@ function populateFilter(selId, key) {
   allRows.forEach(function(r){ if(r[key]) vals[r[key]]=1; });
   Object.keys(vals).sort().forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
 }
+populateFilter('fFY',      'fy');
 populateFilter('fMonth',   'monthYear');
 populateFilter('fDept',    'machineType');
 populateFilter('fMachine', 'machineName');
@@ -328,11 +360,11 @@ populateFilter('fPerson',  'attendedBy');
 // ── FILTER LOGIC ──
 var filteredRows = allRows.slice();
 function getFiltered() {
-  var m=document.getElementById('fMonth').value, d=document.getElementById('fDept').value,
+  var fy=document.getElementById('fFY').value, m=document.getElementById('fMonth').value, d=document.getElementById('fDept').value,
       mc=document.getElementById('fMachine').value, s=document.getElementById('fShift').value,
       c=document.getElementById('fCat').value, p=document.getElementById('fPerson').value;
   return allRows.filter(function(r){
-    return (!m||r.monthYear===m) && (!d||r.machineType===d) && (!mc||r.machineName===mc) &&
+    return (!fy||r.fy===fy) && (!m||r.monthYear===m) && (!d||r.machineType===d) && (!mc||r.machineName===mc) &&
            (!s||r.shift===s) && (!c||r.category===c) && (!p||r.attendedBy===p);
   });
 }
@@ -342,11 +374,13 @@ function applyFilters() {
   updateCharts(filteredRows);
   updateMachineTable(filteredRows);
   updateMonthlyTable(filteredRows);
+  updatePendingTable();
   updateRecentTable(filteredRows);
   updateTopDownTable(filteredRows);
+  displayAlerts();
 }
 function resetFilters() {
-  ['fMonth','fDept','fMachine','fShift','fCat','fPerson'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['fFY','fMonth','fDept','fMachine','fShift','fCat','fPerson'].forEach(function(id){ document.getElementById(id).value=''; });
   applyFilters();
 }
 
@@ -592,6 +626,90 @@ function updateCharts(rows) {
   rows.forEach(function(r){ if(r.machineName) t10[r.machineName]=(t10[r.machineName]||0)+(r.minutes||0); });
   var t10L=Object.keys(t10).sort(function(a,b){return t10[b]-t10[a];}).slice(0,10);
   CH['top10']=new Chart(document.getElementById('chartTop10'),{type:'bar',data:{labels:t10L,datasets:[{label:'Downtime (min)',data:t10L.map(function(m){return t10[m];}),backgroundColor:'rgba(232,64,64,0.7)',borderColor:'#e84040',borderWidth:1,borderRadius:3}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+}
+
+// ── PENDING TABLE (from pendingData stream) ──
+function updatePendingTable() {
+  var pending = pendingData || [];
+  document.getElementById('pendingTable').innerHTML = pending.length ? pending.map(function(r){
+    return '<tr style="background:#f0a50008;">'+
+      '<td style="white-space:nowrap;color:var(--muted);font-size:0.78rem;">'+(r.date||'--')+'</td>'+
+      '<td><strong>'+(r.machineName||'--')+'</strong></td>'+
+      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.machineType||'--')+'</td>'+
+      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.unit||'--')+'</td>'+
+      '<td style="font-size:0.78rem;">'+(r.shift||'--')+'</td>'+
+      '<td>'+catBadge(r.category)+'</td>'+
+      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.problemType||'--')+'</td>'+
+      '<td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+(r.description||'')+'">'+(r.description||'--')+'</td>'+
+      '<td style="text-align:center;color:var(--accent);">'+(r.minutes||0)+'</td>'+
+      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.attendedBy||'--')+'</td>'+
+      '<td><button onclick="openModal('+JSON.stringify(r).replace(/"/g,'&quot;')+'); return false;" style="background:var(--accent); color:#0a0d13; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">View</button></td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="11" class="no-data">No pending entries</td></tr>';
+}
+
+// ── DRILL-DOWN MODAL ──
+function openModal(entry) {
+  var content = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:0.9rem;">';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Ref ID</strong><div style="color:var(--accent); font-weight:600;">'+(entry.refId||'--')+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Date</strong><div>'+(entry.date||'--')+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Machine Name</strong><div><strong>'+(entry.machineName||'--')+'</strong></div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Department</strong><div>'+(entry.machineType||'--')+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Unit</strong><div>'+(entry.unit||'--')+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Shift</strong><div>'+(entry.shift||'--')+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Category</strong><div>'+catBadge(entry.category)+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Problem Type</strong><div>'+(entry.problemType||'--')+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Duration (min)</strong><div style="color:'+(entry.category==='Breakdown'?'var(--red)':'var(--text)')+';">'+(entry.minutes||0)+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Attended By</strong><div>'+(entry.attendedBy||'--')+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Status</strong><div style="color:'+(entry.status==='PENDING_REVIEW'?'var(--accent)':'var(--green)')+';">'+(entry.status||'--')+'</div></div>';
+  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Time Start</strong><div>'+(entry.timeStart||'--')+'</div></div>';
+  content += '</div>';
+  content += '<div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"><strong style="color:var(--muted); font-size:0.8rem;">Description</strong><div style="margin-top:8px; line-height:1.6;">'+(entry.description||'--')+'</div></div>';
+  if (entry.actionTaken) {
+    content += '<div style="margin-top:12px;"><strong style="color:var(--muted); font-size:0.8rem;">Action Taken</strong><div style="margin-top:8px; line-height:1.6;">'+(entry.actionTaken||'--')+'</div></div>';
+  }
+  document.getElementById('modalContent').innerHTML = content;
+  document.getElementById('drillDownModal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('drillDownModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+  var modal = document.getElementById('drillDownModal');
+  if (e.target === modal) {
+    closeModal();
+  }
+});
+
+// ── ALERT PANEL ──
+function displayAlerts() {
+  var alertPanel = document.getElementById('alertPanel');
+  if (!alerts || alerts.length === 0) {
+    alertPanel.style.display = 'none';
+    return;
+  }
+  
+  var html = '';
+  alerts.forEach(function(alert) {
+    var bgColor = alert.severity === 'RED' ? '#e8404015' : alert.severity === 'ORANGE' ? '#f0a50015' : '#1fc67a15';
+    var borderColor = alert.severity === 'RED' ? '#e8404040' : alert.severity === 'ORANGE' ? '#f0a50040' : '#1fc67a40';
+    var textColor = alert.severity === 'RED' ? 'var(--red)' : alert.severity === 'ORANGE' ? 'var(--accent)' : 'var(--green)';
+    var icon = alert.severity === 'RED' ? '⚠' : alert.severity === 'ORANGE' ? '⚡' : '✓';
+    
+    html += '<div style="background:'+bgColor+'; border:1px solid '+borderColor+'; border-radius:8px; padding:12px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px;">';
+    html += '<span style="font-size:1.2rem; color:'+textColor+';">'+icon+'</span>';
+    html += '<div style="flex:1;">';
+    html += '<div style="color:'+textColor+'; font-weight:600; font-size:0.9rem;">'+alert.type+'</div>';
+    html += '<div style="color:var(--muted); font-size:0.85rem; margin-top:4px;">'+alert.message+'</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  
+  alertPanel.innerHTML = html;
+  alertPanel.style.display = 'block';
 }
 
 // ── INITIAL RENDER ──

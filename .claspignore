@@ -1,8 +1,10 @@
 # CLASP will NOT push these files to Apps Script
-**/**
-!apps-script/**
-!apps-script/*.gs
-!apps-script/*.html
+# Push everything from src directory
+!src/**
+!src/*.gs
+!src/*.js
+!src/*.html
+!src/*.json
 
 # Ignore these specifically
 node_modules/
@@ -12,3 +14,4 @@ node_modules/
 docs/
 form/
 README.md
+apps-script/

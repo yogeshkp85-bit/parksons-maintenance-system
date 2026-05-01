@@ -324,8 +324,9 @@ try {
         r.monthYear = monthNames[monthIdx] + '-' + yearStr;
       }
     }
-    if (!r.fy && r.fy !== '') {
-      r.fy = r.fy || 'Unknown';
+    // fy should already be set by backend, but ensure it's not empty
+    if (!r.fy || r.fy === '') {
+      r.fy = 'Unknown';
     }
   });
 } catch(e) { console.error('Data parse error:', e); }
@@ -639,8 +640,8 @@ function updateCharts(rows) {
 // ── PENDING TABLE (from pendingData stream) ──
 function updatePendingTable() {
   var pending = pendingData || [];
-  document.getElementById('pendingTable').innerHTML = pending.length ? pending.map(function(r){
-    return '<tr style="background:#f0a50008;">'+
+  document.getElementById('pendingTable').innerHTML = pending.length ? pending.map(function(r, idx){
+    return '<tr style="background:#f0a50008;" data-entry-index="'+idx+'">'+
       '<td style="white-space:nowrap;color:var(--muted);font-size:0.78rem;">'+(r.date||'--')+'</td>'+
       '<td><strong>'+(r.machineName||'--')+'</strong></td>'+
       '<td style="color:var(--muted);font-size:0.78rem;">'+(r.machineType||'--')+'</td>'+
@@ -651,13 +652,26 @@ function updatePendingTable() {
       '<td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+(r.description||'')+'">'+(r.description||'--')+'</td>'+
       '<td style="text-align:center;color:var(--accent);">'+(r.minutes||0)+'</td>'+
       '<td style="font-size:0.78rem;color:var(--muted);">'+(r.attendedBy||'--')+'</td>'+
-      '<td><button onclick="openModal('+JSON.stringify(r).replace(/"/g,'&quot;')+'); return false;" style="background:var(--accent); color:#0a0d13; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">View</button></td>'+
+      '<td><button onclick="openModalFromPending('+idx+'); return false;" style="background:var(--accent); color:#0a0d13; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">View</button></td>'+
       '</tr>';
   }).join('') : '<tr><td colspan="11" class="no-data">No pending entries</td></tr>';
 }
 
 // ── DRILL-DOWN MODAL ──
+function openModalFromPending(idx) {
+  if (!pendingData || !pendingData[idx]) {
+    console.error('Invalid pending entry index:', idx);
+    return;
+  }
+  openModal(pendingData[idx]);
+}
+
 function openModal(entry) {
+  if (!entry) {
+    console.error('No entry provided to modal');
+    return;
+  }
+  
   var content = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:0.9rem;">';
   content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Ref ID</strong><div style="color:var(--accent); font-weight:600;">'+(entry.refId||'--')+'</div></div>';
   content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Date</strong><div>'+(entry.date||'--')+'</div></div>';
@@ -676,8 +690,10 @@ function openModal(entry) {
   if (entry.actionTaken) {
     content += '<div style="margin-top:12px;"><strong style="color:var(--muted); font-size:0.8rem;">Action Taken</strong><div style="margin-top:8px; line-height:1.6;">'+(entry.actionTaken||'--')+'</div></div>';
   }
+  
   document.getElementById('modalContent').innerHTML = content;
   document.getElementById('drillDownModal').style.display = 'flex';
+  console.log('Modal opened for entry:', entry.refId);
 }
 
 function closeModal() {

@@ -36,7 +36,7 @@ var COL = {
   STATUS:       18
 };
 
-var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbxX596sq5C-eRtAAfOAxAZrRSEozLSs94mUgpXAfcupXRurHHTIfKSw_COb2o/exec';
+var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbyhLPJO5QjGc-xuhTRjo5xK54iMM8-u4YMdTQA3WlPJfsf_WLAFLn5aPcXSn7/exec';
 
 function getBaseUrl() {
   return DEPLOYMENT_URL;

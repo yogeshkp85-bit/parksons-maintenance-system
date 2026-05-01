@@ -302,6 +302,14 @@ try {
   if (parsed && parsed.generated)    genTime      = new Date(parsed.generated).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   if (parsed && parsed.pendingCount) pendingCount = parsed.pendingCount || pendingData.length || 0;
   
+  // DEBUG: Log data structure
+  console.log('Dashboard Data Loaded:');
+  console.log('- approvedData:', approvedData.length, 'entries');
+  console.log('- last50:', last50.length, 'entries');
+  console.log('- pendingData:', pendingData.length, 'entries');
+  console.log('- kpiData:', kpiData);
+  console.log('- alerts:', alerts.length, 'alerts');
+  
   // For backward compatibility and filtering, use last50 (which includes APPROVED + PENDING)
   allRows = last50;
   

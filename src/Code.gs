@@ -36,7 +36,7 @@ var COL = {
   STATUS:       18
 };
 
-var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbwNZxQ_Yyt_oLw83EY_UOgtSg1Wiv2-d8Y5NlImIu2KbB4Mb-fmPxwl5uBCrO/exec';
+var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbxlupdkVZl2K4wFWQnZu1nnWvXl8omyo9iauqi_w94/exec';
 
 function getBaseUrl() {
   return DEPLOYMENT_URL;
@@ -48,11 +48,19 @@ function onOpen() {
     .createMenu('Maintenance System')
     .addItem('Open Live Dashboard',    'openDashboard')
     .addItem('Open Admin Panel',       'openAdminPanel')
+    .addItem('Open PM Schedule vs Compliance', 'openPMCompliance')
     .addItem('Send Email Report Now',  'sendDailyEmailReport')
     .addItem('Send Daily Data Export', 'sendDailyDataExport')
     .addSeparator()
     .addItem('Show All URLs',          'showAllUrls')
     .addItem('Test Form Submission',   'testSubmit')
+    .addSeparator()
+    .addItem('🔧 Fix: Unhide All Rows in Final_Data', 'unhideAllRowsInFinalData')
+    .addItem('📊 Diagnostic: Count Actual Data Rows', 'countActualDataRows')
+    .addItem('🧪 TEST: Verify Data Filter', 'testDataFilter')
+    .addItem('🔍 DIAGNOSTIC: Find Missing Entries', 'findMissingEntries')
+    .addItem('📋 DIAGNOSTIC: List All Sheets', 'listAllSheets')
+    .addItem('✓ CREATE: Initialize PM_Schedule Sheet', 'createPMScheduleSheetComplete')
     .addToUi();
 }
 
@@ -71,6 +79,15 @@ function openAdminPanel() {
     HtmlService.createHtmlOutput(
       '<script>window.open("' + url + '","_blank");google.script.host.close();<\/script>' +
       '<p style="font-family:sans-serif;padding:20px;color:#555">Opening Admin Panel...</p>'
+    ), 'Opening...');
+}
+
+function openPMCompliance() {
+  var url = getBaseUrl() + '?page=pm-compliance';
+  SpreadsheetApp.getUi().showModalDialog(
+    HtmlService.createHtmlOutput(
+      '<script>window.open("' + url + '","_blank");google.script.host.close();<\/script>' +
+      '<p style="font-family:sans-serif;padding:20px;color:#555">Opening PM Schedule vs Compliance...</p>'
     ), 'Opening...');
 }
 
@@ -109,6 +126,7 @@ function doGet(e) {
   if (page === 'admin')     return serveAdmin();
   if (page === 'kpi')       return serveKPI();
   if (page === 'form')      return serveForm();
+  if (page === 'pm-compliance') return servePMCompliance();
 
   return ContentService
     .createTextOutput(JSON.stringify({
@@ -158,6 +176,10 @@ function handleGetAction(params) {
     else if (action === 'saveAdminUser')     result = saveAdminUser(params);
     else if (action === 'deleteAdminUser')   result = deleteAdminUser(params);
     else if (action === 'getHistoricalData') result = getHistoricalData();
+    else if (action === 'getDashboardData')  result = getDashboardData();
+    else if (action === 'diagnoseDashboardData') result = diagnoseDashboardData();
+    else if (action === 'countActualDataRows') result = countActualDataRows();
+    else if (action === 'getPMComplianceData') result = getPMComplianceData();
     else result = { status: 'error', message: 'Unknown action: ' + action };
   } catch(err) {
     result = { status: 'error', message: err.toString() };
@@ -281,66 +303,362 @@ function getHistoricalData() {
   return { rows: rows, generated: new Date().toISOString() };
 }
 
-// FIX HISTORICAL_KPI HEADERS
-// DIAGNOSTIC: CHECK HISTORICAL_KPI DATA
-function checkHistoricalKPIData() {
+// TEST: Verify the filter is working
+function testDataFilter() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Historical_KPI');
-  if (!sheet) {
-    Logger.log('ERROR: Historical_KPI sheet not found');
-    return { status: 'error', message: 'Historical_KPI sheet not found' };
+  var finalSheet = ss.getSheetByName(CONFIG.finalSheetName);
+  
+  if (!finalSheet) {
+    return { status: 'error', message: 'Final_Data sheet not found' };
   }
   
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
+  var headers = finalSheet.getRange(1, 1, 1, finalSheet.getLastColumn()).getValues()[0];
+  var lastRow = finalSheet.getLastRow();
+  var data = finalSheet.getRange(2, 1, lastRow - 1, finalSheet.getLastColumn()).getValues();
   
-  Logger.log('=== HISTORICAL_KPI SHEET DIAGNOSTIC ===');
-  Logger.log('Total Rows: ' + lastRow);
-  Logger.log('Total Columns: ' + lastCol);
+  Logger.log('=== TEST DATA FILTER ===');
+  Logger.log('Total rows read: ' + data.length);
   
-  // Get headers
-  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  Logger.log('Headers: ' + JSON.stringify(headers));
+  var colMap = {};
+  headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
   
-  // Get first 5 data rows
-  var sampleRows = [];
-  if (lastRow > 1) {
-    var numRows = Math.min(5, lastRow - 1);
-    var dataRange = sheet.getRange(2, 1, numRows, lastCol);
-    var data = dataRange.getValues();
-    sampleRows = data;
-    Logger.log('Sample Data Rows (' + numRows + ' rows):');
-    data.forEach(function(row, idx) {
-      Logger.log('Row ' + (idx + 2) + ': ' + JSON.stringify(row));
-    });
-  } else {
-    Logger.log('No data rows found (only headers)');
-  }
+  // Count rows with non-empty Ref_ID
+  var rowsWithRefId = 0;
+  var rowsWithoutRefId = 0;
+  var firstEmptyRow = null;
+  var firstNonEmptyRow = null;
   
-  Logger.log('Data Row Count: ' + Math.max(0, lastRow - 1));
-  Logger.log('=== END DIAGNOSTIC ===');
+  data.forEach(function(row, idx) {
+    var refId = String(row[colMap['Ref_ID']] || '').trim();
+    if (refId && refId.length > 0) {
+      rowsWithRefId++;
+      if (!firstNonEmptyRow) firstNonEmptyRow = { row: idx + 2, refId: refId };
+    } else {
+      rowsWithoutRefId++;
+      if (!firstEmptyRow) firstEmptyRow = { row: idx + 2, refId: refId };
+    }
+  });
+  
+  Logger.log('Rows with Ref_ID: ' + rowsWithRefId);
+  Logger.log('Rows without Ref_ID: ' + rowsWithoutRefId);
+  Logger.log('First non-empty row: ' + JSON.stringify(firstNonEmptyRow));
+  Logger.log('First empty row: ' + JSON.stringify(firstEmptyRow));
+  Logger.log('=== END TEST ===');
   
   return {
     status: 'success',
-    totalRows: lastRow,
-    totalColumns: lastCol,
-    headers: headers,
-    sampleDataRows: sampleRows,
-    dataRowCount: Math.max(0, lastRow - 1)
+    totalRowsRead: data.length,
+    rowsWithRefId: rowsWithRefId,
+    rowsWithoutRefId: rowsWithoutRefId,
+    firstNonEmptyRow: firstNonEmptyRow,
+    firstEmptyRow: firstEmptyRow
   };
 }
 
-function fixHistoricalKPIHeaders() {
+// DIAGNOSTIC: Count only non-empty rows (entries with Ref_ID)
+function countActualDataRows() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Historical_KPI');
-  if (!sheet) return { status: 'error', message: 'Historical_KPI sheet not found' };
+  var finalSheet = ss.getSheetByName(CONFIG.finalSheetName);
+  var rawSheet = ss.getSheetByName(CONFIG.sheetName);
   
-  // Set correct headers
-  var headers = ['FY', 'Month', 'Machine', 'Available_Time', 'Breakdown_Time', 'Breakdown_Count', 'Uptime', 'MTTR', 'MTBF', 'Availability'];
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  var finalDataActualRows = 0;
+  var finalDataEmptyRows = 0;
+  var rawDataActualRows = 0;
+  var rawDataEmptyRows = 0;
+  
+  // Count Final_Data
+  if (finalSheet && finalSheet.getLastRow() > 1) {
+    var headers = finalSheet.getRange(1, 1, 1, finalSheet.getLastColumn()).getValues()[0];
+    var lastRow = finalSheet.getLastRow();
+    var data = finalSheet.getRange(2, 1, lastRow - 1, finalSheet.getLastColumn()).getValues();
+    
+    var colMap = {};
+    headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
+    
+    data.forEach(function(row) {
+      var refId = String(row[colMap['Ref_ID']] || '').trim();
+      if (refId && refId.length > 0) {
+        finalDataActualRows++;
+      } else {
+        finalDataEmptyRows++;
+      }
+    });
+  }
+  
+  // Count Raw_Data
+  if (rawSheet && rawSheet.getLastRow() > 1) {
+    var headers = rawSheet.getRange(1, 1, 1, rawSheet.getLastColumn()).getValues()[0];
+    var lastRow = rawSheet.getLastRow();
+    var data = rawSheet.getRange(2, 1, lastRow - 1, rawSheet.getLastColumn()).getValues();
+    
+    var colMap = {};
+    headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
+    
+    data.forEach(function(row) {
+      var refId = String(row[colMap['Ref_ID']] || '').trim();
+      if (refId && refId.length > 0) {
+        rawDataActualRows++;
+      } else {
+        rawDataEmptyRows++;
+      }
+    });
+  }
+  
+  return {
+    status: 'success',
+    finalData: {
+      totalRows: finalSheet ? finalSheet.getLastRow() - 1 : 0,
+      actualDataRows: finalDataActualRows,
+      emptyRows: finalDataEmptyRows
+    },
+    rawData: {
+      totalRows: rawSheet ? rawSheet.getLastRow() - 1 : 0,
+      actualDataRows: rawDataActualRows,
+      emptyRows: rawDataEmptyRows
+    }
+  };
+}
+
+// DIAGNOSTIC: Check for duplicate rows in Final_Data
+// DIAGNOSTIC: Check for duplicate rows in Final_Data
+function checkForDuplicates() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var finalSheet = ss.getSheetByName(CONFIG.finalSheetName);
+  var rawSheet = ss.getSheetByName(CONFIG.sheetName);
+  
+  Logger.log('=== DUPLICATE CHECK ===');
+  
+  // Check Final_Data
+  if (finalSheet && finalSheet.getLastRow() > 1) {
+    var data = finalSheet.getRange(2, 1, finalSheet.getLastRow() - 1, finalSheet.getLastColumn()).getValues();
+    var refIds = {};
+    var duplicates = 0;
+    
+    data.forEach(function(row) {
+      var refId = String(row[1] || '').trim(); // Assuming Ref_ID is column 2 (index 1)
+      if (refId) {
+        if (refIds[refId]) {
+          duplicates++;
+          Logger.log('DUPLICATE in Final_Data: ' + refId);
+        }
+        refIds[refId] = 1;
+      }
+    });
+    
+    Logger.log('Final_Data total rows: ' + data.length);
+    Logger.log('Final_Data unique Ref_IDs: ' + Object.keys(refIds).length);
+    Logger.log('Final_Data duplicates found: ' + duplicates);
+  }
+  
+  // Check Raw_Data
+  if (rawSheet && rawSheet.getLastRow() > 1) {
+    var data = rawSheet.getRange(2, 1, rawSheet.getLastRow() - 1, rawSheet.getLastColumn()).getValues();
+    var refIds = {};
+    var duplicates = 0;
+    
+    data.forEach(function(row) {
+      var refId = String(row[1] || '').trim(); // Assuming Ref_ID is column 2 (index 1)
+      if (refId) {
+        if (refIds[refId]) {
+          duplicates++;
+          Logger.log('DUPLICATE in Raw_Data: ' + refId);
+        }
+        refIds[refId] = 1;
+      }
+    });
+    
+    Logger.log('Raw_Data total rows: ' + data.length);
+    Logger.log('Raw_Data unique Ref_IDs: ' + Object.keys(refIds).length);
+    Logger.log('Raw_Data duplicates found: ' + duplicates);
+  }
+  
+  Logger.log('=== END DUPLICATE CHECK ===');
+  
+  return {
+    status: 'success',
+    message: 'Check complete - see logs'
+  };
+}
+
+// DIAGNOSTIC: Check all sheets in the spreadsheet
+function listAllSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
+  
+  Logger.log('=== ALL SHEETS ===');
+  sheets.forEach(function(sheet) {
+    Logger.log('Sheet: ' + sheet.getName() + ' | Rows: ' + sheet.getLastRow() + ' | Columns: ' + sheet.getLastColumn());
+  });
+  Logger.log('=== END SHEETS ===');
+  
+  return {
+    status: 'success',
+    sheets: sheets.map(function(s) { return { name: s.getName(), rows: s.getLastRow(), columns: s.getLastColumn() }; })
+  };
+}
+
+// FIX: Unhide all rows in Final_Data sheet
+function unhideAllRowsInFinalData() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var finalSheet = ss.getSheetByName(CONFIG.finalSheetName);
+  
+  if (!finalSheet) {
+    return { status: 'error', message: 'Final_Data sheet not found' };
+  }
+  
+  var lastRow = finalSheet.getLastRow();
+  var lastCol = finalSheet.getLastColumn();
+  
+  // Unhide all rows
+  finalSheet.unhideRow(finalSheet.getRange(1, 1, lastRow, lastCol));
+  
   SpreadsheetApp.flush();
   
-  return { status: 'success', message: 'Headers fixed', headersSet: headers };
+  return {
+    status: 'success',
+    message: 'All rows unhidden in Final_Data sheet',
+    totalRows: lastRow,
+    totalColumns: lastCol
+  };
+}
+
+// DIAGNOSTIC: Find missing entries (difference between total and approved)
+function findMissingEntries() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var rawSheet = ss.getSheetByName(CONFIG.sheetName);
+  
+  if (!rawSheet || rawSheet.getLastRow() < 2) {
+    return { status: 'error', message: 'Raw_Data sheet not found' };
+  }
+  
+  var headers = rawSheet.getRange(1, 1, 1, rawSheet.getLastColumn()).getValues()[0];
+  var data = rawSheet.getRange(2, 1, rawSheet.getLastRow()-1, rawSheet.getLastColumn()).getValues();
+  
+  var colMap = {};
+  headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
+  
+  var totalRows = 0;
+  var rowsWithRefId = 0;
+  var rowsWithStatus = 0;
+  var rowsWithApprovedStatus = 0;
+  var missingEntries = [];
+  
+  data.forEach(function(row, idx) {
+    totalRows++;
+    var refId = String(row[colMap['Ref_ID']] || '').trim();
+    var status = String(row[colMap['Status']] || '').trim();
+    
+    if (refId && refId.length > 0) {
+      rowsWithRefId++;
+      
+      if (status && status.length > 0) {
+        rowsWithStatus++;
+        
+        if (status === 'APPROVED') {
+          rowsWithApprovedStatus++;
+        }
+      } else {
+        // Missing status
+        missingEntries.push({
+          row: idx + 2,
+          refId: refId,
+          reason: 'Missing Status',
+          date: String(row[colMap['Date']] || ''),
+          machine: String(row[colMap['Machine_Name']] || '')
+        });
+      }
+    }
+  });
+  
+  return {
+    status: 'success',
+    totalRows: totalRows,
+    rowsWithRefId: rowsWithRefId,
+    rowsWithStatus: rowsWithStatus,
+    rowsWithApprovedStatus: rowsWithApprovedStatus,
+    missingCount: missingEntries.length,
+    missingEntries: missingEntries.slice(0, 20) // Show first 20
+  };
+}
+
+// DIAGNOSTIC: Diagnose dashboard data issues
+function diagnoseDashboardData() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var finalSheet = ss.getSheetByName(CONFIG.finalSheetName);
+  var rawSheet = ss.getSheetByName(CONFIG.sheetName);
+  
+  var finalDataRows = 0;
+  var rawDataRows = 0;
+  var finalDataUniqueRefIds = 0;
+  var finalDataDuplicates = 0;
+  var rawDataStatusCounts = {};
+  var rawDataUniqueRefIds = 0;
+  
+  // Check Final_Data
+  if (finalSheet) {
+    finalDataRows = finalSheet.getLastRow() - 1;
+    
+    // Get headers and check for duplicates
+    var headers = finalSheet.getRange(1, 1, 1, finalSheet.getLastColumn()).getValues()[0];
+    var data = finalSheet.getRange(2, 1, finalDataRows, finalSheet.getLastColumn()).getValues();
+    
+    var refIds = {};
+    data.forEach(function(row) {
+      var refId = String(row[1] || '').trim();
+      if (refId) {
+        if (refIds[refId]) {
+          finalDataDuplicates++;
+        }
+        refIds[refId] = (refIds[refId] || 0) + 1;
+      }
+    });
+    finalDataUniqueRefIds = Object.keys(refIds).length;
+  }
+  
+  // Check Raw_Data
+  if (rawSheet) {
+    rawDataRows = rawSheet.getLastRow() - 1;
+    
+    var headers = rawSheet.getRange(1, 1, 1, rawSheet.getLastColumn()).getValues()[0];
+    var data = rawSheet.getRange(2, 1, rawDataRows, rawSheet.getLastColumn()).getValues();
+    
+    var refIds = {};
+    data.forEach(function(row) {
+      var status = String(row[18] || 'UNKNOWN').trim();
+      rawDataStatusCounts[status] = (rawDataStatusCounts[status] || 0) + 1;
+      
+      var refId = String(row[1] || '').trim();
+      if (refId) {
+        refIds[refId] = (refIds[refId] || 0) + 1;
+      }
+    });
+    rawDataUniqueRefIds = Object.keys(refIds).length;
+  }
+  
+  // Now run getDashboardData and check what it returns
+  var dashData = getDashboardData();
+  
+  return {
+    status: 'success',
+    diagnosis: {
+      finalDataRows: finalDataRows,
+      finalDataUniqueRefIds: finalDataUniqueRefIds,
+      finalDataDuplicates: finalDataDuplicates,
+      rawDataRows: rawDataRows,
+      rawDataStatusCounts: rawDataStatusCounts,
+      rawDataUniqueRefIds: rawDataUniqueRefIds,
+      dashboardDataResults: {
+        approvedDataLength: dashData.approvedData.length,
+        last50Length: dashData.last50.length,
+        pendingDataLength: dashData.pendingData.length,
+        kpiTotalEntries: dashData.kpiData.totalEntries,
+        kpiTotalBreakdowns: dashData.kpiData.totalBreakdowns,
+        kpiAvgMTTR: dashData.kpiData.avgMTTR,
+        kpiAvgMTBF: dashData.kpiData.avgMTBF,
+        kpiAvgAvailability: dashData.kpiData.avgAvailability
+      }
+    }
+  };
 }
 
 // 4. SERVE ADMIN PANEL
@@ -388,38 +706,14 @@ function parseDateValue(v) {
 function getDashboardData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // STREAM A: Get APPROVED data from Final_Data (for KPI & charts)
+  // DEBUG: Log sheet information
+  Logger.log('=== getDashboardData DEBUG ===');
   var finalSheet = ss.getSheetByName(CONFIG.finalSheetName);
-  var approvedData = [];
-  if (finalSheet && finalSheet.getLastRow() > 1) {
-    var headers = finalSheet.getRange(1, 1, 1, finalSheet.getLastColumn()).getValues()[0];
-    var data = finalSheet.getRange(2, 1, finalSheet.getLastRow()-1, finalSheet.getLastColumn()).getValues();
-    var colMap = {};
-    headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
-    
-    approvedData = data.map(function(row) {
-      var dv = row[colMap['Date']];
-      var dateObj = parseDateValue(dv);
-      return {
-        refId:       String(row[colMap['Ref_ID']] || ''),
-        date:        fmtDate(dateObj),
-        fy:          getFinancialYear(dateObj),
-        month:       Utilities.formatDate(dateObj, CONFIG.timezone, 'MMM'),
-        shift:       String(row[colMap['Shift']] || '').replace('Thrid','Third'),
-        machineType: String(row[colMap['Machine_Type']] || ''),
-        machineName: String(row[colMap['Machine_Name']] || ''),
-        unit:        String(row[colMap['Unit']] || ''),
-        category:    String(row[colMap['Category']] || ''),
-        minutes:     parseFloat(row[colMap['Minutes']]) || 0,
-        bdFlag:      parseInt(row[colMap['BD_Flag']]) || 0,
-        availableMin:parseFloat(row[colMap['Available_Time_Min']]) || 44640,
-        status:      'APPROVED'
-      };
-    });
-  }
-  
-  // STREAM B: Get ALL data from Raw_Data (for table display)
   var rawSheet = ss.getSheetByName(CONFIG.sheetName);
+  Logger.log('Final_Data sheet rows: ' + (finalSheet ? finalSheet.getLastRow() : 'NOT FOUND'));
+  Logger.log('Raw_Data sheet rows: ' + (rawSheet ? rawSheet.getLastRow() : 'NOT FOUND'));
+  
+  // STREAM A: Get ALL data from Raw_Data (has all fields including problemType, description, attendedBy)
   var rawData = [];
   if (rawSheet && rawSheet.getLastRow() > 1) {
     var headers = rawSheet.getRange(1, 1, 1, rawSheet.getLastColumn()).getValues()[0];
@@ -428,6 +722,7 @@ function getDashboardData() {
     headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
     
     rawData = data.map(function(row) {
+      var refId = String(row[colMap['Ref_ID']] || '').trim();
       var dv = row[colMap['Date']];
       var dateObj = parseDateValue(dv);
       var ts = row[colMap['Time_Start']] || '';
@@ -436,10 +731,11 @@ function getDashboardData() {
       if (te instanceof Date) te = Utilities.formatDate(te, CONFIG.timezone, 'hh:mm a');
       
       return {
-        refId:       String(row[colMap['Ref_ID']] || ''),
+        refId:       refId,
         date:        fmtDate(dateObj),
         fy:          getFinancialYear(dateObj),
         month:       Utilities.formatDate(dateObj, CONFIG.timezone, 'MMM'),
+        monthYear:   Utilities.formatDate(dateObj, CONFIG.timezone, 'MMM-yy'),
         shift:       String(row[colMap['Shift']] || '').replace('Thrid','Third'),
         machineType: String(row[colMap['Machine_Type']] || ''),
         machineName: String(row[colMap['Machine_Name']] || ''),
@@ -450,19 +746,29 @@ function getDashboardData() {
         actionTaken: String(row[colMap['Action_Taken']] || ''),
         timeStart:   String(ts),
         timeEnd:     String(te),
-        minutes:     parseFloat(row[colMap['Minutes']]) || 0,
+        minutes:     parseFloat(row[colMap['Duration_Min']]) || 0,
         bdFlag:      parseInt(row[colMap['BD_Flag']]) || 0,
         availableMin:parseFloat(row[colMap['Available_Time_Min']]) || 44640,
         attendedBy:  String(row[colMap['Attended_By']] || ''),
         status:      String(row[colMap['Status']] || 'PENDING_REVIEW')
       };
+    }).filter(function(r) {
+      // Only include rows with non-empty Ref_ID
+      return r.refId && r.refId.length > 0;
     });
   }
   
-  // Get last 50 entries (APPROVED + PENDING)
-  var last50 = rawData.filter(function(r) {
-    return r.status === 'APPROVED' || r.status === 'PENDING_REVIEW';
-  }).slice(-50).reverse();
+  Logger.log('Raw_Data total rows after filtering: ' + rawData.length);
+  
+  // STREAM B: Get APPROVED data only (status = APPROVED)
+  var approvedData = rawData.filter(function(r) {
+    return r.status === 'APPROVED';
+  });
+  
+  Logger.log('Approved data rows: ' + approvedData.length);
+  
+  // Get last 50 entries (APPROVED only)
+  var last50 = approvedData.slice(-50).reverse();
   
   // Get PENDING entries only
   var pendingData = rawData.filter(function(r) {
@@ -500,7 +806,10 @@ function calculateDashboardKPI(approvedData) {
     };
   }
   
-  var bdEntries = approvedData.filter(function(r) { return r.bdFlag === 1; });
+  var bdEntries = approvedData.filter(function(r) { 
+    // Use category instead of bdFlag for consistency with frontend
+    return String(r.category || '').trim() === 'Breakdown';
+  });
   var totalDowntimeMin = bdEntries.reduce(function(s, r) { return s + r.minutes; }, 0);
   var totalAvailableMin = approvedData.reduce(function(s, r) { return s + r.availableMin; }, 0);
   var totalRunningMin = totalAvailableMin - totalDowntimeMin;
@@ -528,7 +837,10 @@ function calculateAlerts(approvedData) {
     return alerts;
   }
   
-  var bdEntries = approvedData.filter(function(r) { return r.bdFlag === 1; });
+  var bdEntries = approvedData.filter(function(r) { 
+    // Use category instead of bdFlag for consistency with frontend
+    return String(r.category || '').trim() === 'Breakdown';
+  });
   var totalDowntimeMin = bdEntries.reduce(function(s, r) { return s + r.minutes; }, 0);
   var totalAvailableMin = approvedData.reduce(function(s, r) { return s + r.availableMin; }, 0);
   var totalRunningMin = totalAvailableMin - totalDowntimeMin;
@@ -537,27 +849,51 @@ function calculateAlerts(approvedData) {
   var avgMTBF = bdEntries.length > 0 ? (totalRunningMin / bdEntries.length) : 0;
   var avgAvailability = totalAvailableMin > 0 ? ((totalAvailableMin - totalDowntimeMin) / totalAvailableMin * 100) : 100;
   
+  // Calculate machine-wise MTTR for high MTTR alert
+  var machineMetrics = {};
+  bdEntries.forEach(function(r) {
+    var mc = r.machineName || 'Unknown';
+    if (!machineMetrics[mc]) machineMetrics[mc] = { count: 0, totalMin: 0 };
+    machineMetrics[mc].count++;
+    machineMetrics[mc].totalMin += r.minutes;
+  });
+  
+  var machinesMTTR = [];
+  Object.keys(machineMetrics).forEach(function(mc) {
+    var m = machineMetrics[mc];
+    var mttr = m.count > 0 ? (m.totalMin / m.count) : 0;
+    machinesMTTR.push({ machine: mc, mttr: mttr, count: m.count });
+  });
+  machinesMTTR.sort(function(a, b) { return b.mttr - a.mttr; });
+  
+  // Get top breakdowns by duration
+  var topBreakdowns = bdEntries.slice().sort(function(a, b) { return (b.minutes || 0) - (a.minutes || 0); }).slice(0, 5);
+  
   // Alert 1: MTTR threshold (> 60 minutes)
   if (avgMTTR > 60) {
+    var topMachines = machinesMTTR.slice(0, 3).map(function(m) { return m.machine + ' (' + Math.round(m.mttr) + ' min)'; }).join(', ');
     alerts.push({
       type: 'MTTR',
       severity: 'RED',
       message: 'High MTTR: Average repair time exceeds 60 minutes',
       value: Math.round(avgMTTR * 100) / 100,
       threshold: 60,
-      unit: 'min'
+      unit: 'min',
+      details: 'Top machines: ' + topMachines
     });
   }
   
   // Alert 2: Breakdown count (> 5 in dataset)
   if (bdEntries.length > 5) {
+    var topBdList = topBreakdowns.map(function(b) { return b.machineName + ' (' + b.minutes + ' min)'; }).join(', ');
     alerts.push({
       type: 'BREAKDOWN_COUNT',
       severity: 'ORANGE',
       message: 'High breakdown count: More than 5 breakdowns detected',
       value: bdEntries.length,
       threshold: 5,
-      unit: 'events'
+      unit: 'events',
+      details: 'Top 5 breakdowns: ' + topBdList
     });
   }
   
@@ -569,7 +905,8 @@ function calculateAlerts(approvedData) {
       message: 'Low availability: Below 95% target',
       value: Math.round(avgAvailability * 100) / 100,
       threshold: 95,
-      unit: '%'
+      unit: '%',
+      details: 'Total downtime: ' + Math.round(totalDowntimeMin / 60) + ' hrs'
     });
   }
   
@@ -581,7 +918,8 @@ function calculateAlerts(approvedData) {
       message: 'All systems normal',
       value: 'OK',
       threshold: null,
-      unit: ''
+      unit: '',
+      details: 'MTTR: ' + Math.round(avgMTTR) + ' min | Availability: ' + Math.round(avgAvailability * 100) / 100 + '%'
     });
   }
   
@@ -1189,4 +1527,296 @@ function runVersion() {
     'Advanced Reporting & Analytics - Integrated error logging and version control. Completed comprehensive integration testing with 43/43 tests passing. All performance targets met. Ready for production deployment.',
     'yogeshkp85@gmail.com'
   );
+}
+
+
+// ============================================================
+// PM COMPLIANCE TRACKING
+// ============================================================
+
+function servePMCompliance() {
+  try {
+    var tpl = HtmlService.createTemplateFromFile('PM_Compliance');
+    tpl.baseUrl = getBaseUrl();
+    return tpl.evaluate()
+      .setTitle('Parksons PM Schedule vs Compliance')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  } catch(err) {
+    return HtmlService.createHtmlOutput(
+      '<body style="font-family:sans-serif;padding:40px;background:#0a0d13;color:#e84040">' +
+      '<h2>PM Compliance Page Error</h2><pre>' + err.toString() + '</pre></body>'
+    );
+  }
+}
+
+function getPMComplianceData() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Try to get PM schedule sheets in order of preference
+    var pmSheets = [];
+    var sheetNames = ['Annual PM record 25-26', 'Annual PM record 24-25', 'Annual PM record 2026-27', 'PM_Schedule_Master', 'PM_Schedule'];
+    
+    for (var i = 0; i < sheetNames.length; i++) {
+      var sheet = ss.getSheetByName(sheetNames[i]);
+      if (sheet && sheet.getLastRow() > 1) {
+        pmSheets.push({ name: sheetNames[i], sheet: sheet });
+      }
+    }
+    
+    if (pmSheets.length === 0) {
+      return { status: 'error', message: 'No PM schedule sheets found', machines: [], years: [] };
+    }
+    
+    // Get maintenance records from Final_Data
+    var finalSheet = ss.getSheetByName(CONFIG.finalSheetName);
+    if (!finalSheet) {
+      return { status: 'error', message: 'Final_Data sheet not found', machines: [], years: [] };
+    }
+    
+    var finalLastRow = finalSheet.getLastRow();
+    if (finalLastRow < 2) {
+      return { status: 'error', message: 'Final_Data sheet is empty', machines: [], years: [] };
+    }
+    
+    var finalData = finalSheet.getRange(2, 1, finalLastRow - 1, finalSheet.getLastColumn()).getValues();
+    var finalHeaders = finalSheet.getRange(1, 1, 1, finalSheet.getLastColumn()).getValues()[0];
+    
+    // Create column map for Final_Data
+    var finalColMap = {};
+    finalHeaders.forEach(function(h, i) {
+      finalColMap[String(h).trim()] = i;
+    });
+    
+    Logger.log('Final Headers: ' + JSON.stringify(finalHeaders));
+    Logger.log('Final Column Map: ' + JSON.stringify(finalColMap));
+    
+    // Process all PM schedule sheets
+    var allMachines = [];
+    var yearsProcessed = [];
+    var today = new Date();
+    
+    pmSheets.forEach(function(pmSheetObj) {
+      var pmSheet = pmSheetObj.sheet;
+      var pmSheetName = pmSheetObj.name;
+      
+      // Extract year from sheet name
+      var year = extractYearFromSheetName(pmSheetName);
+      if (yearsProcessed.indexOf(year) === -1) {
+        yearsProcessed.push(year);
+      }
+      
+      Logger.log('Processing sheet: ' + pmSheetName + ' (Year: ' + year + ')');
+      
+      var pmLastRow = pmSheet.getLastRow();
+      var pmData = pmSheet.getRange(2, 1, pmLastRow - 1, pmSheet.getLastColumn()).getValues();
+      var pmHeaders = pmSheet.getRange(1, 1, 1, pmSheet.getLastColumn()).getValues()[0];
+      
+      // Create column map for PM Schedule
+      var pmColMap = {};
+      pmHeaders.forEach(function(h, i) {
+        pmColMap[String(h).trim()] = i;
+      });
+      
+      Logger.log('PM Headers: ' + JSON.stringify(pmHeaders));
+      Logger.log('PM Column Map: ' + JSON.stringify(pmColMap));
+      
+      // Build machines array with compliance data
+      pmData.forEach(function(row, idx) {
+        // Handle Excel format columns
+        var machineId = String(row[pmColMap['Machine / Equipment ID No'] || pmColMap['Machine_ID'] || pmColMap['Machine ID']] || '').trim();
+        var machineName = String(row[pmColMap['Machine / Equipment Name'] || pmColMap['Machine_Name']] || '').trim();
+        var section = String(row[pmColMap['Section']] || '').trim();
+        var frequency = String(row[pmColMap['Frequency of PM'] || pmColMap['Frequency']] || 'Monthly').trim();
+        var yearlyCompliance = parseInt(row[pmColMap['Yearly %'] || pmColMap['Yearly_Compliance']] || 0);
+        
+        if (!machineName) {
+          Logger.log('Skipping row ' + idx + ': no machine name');
+          return;
+        }
+        
+        Logger.log('Processing machine: ' + machineName + ' in year ' + year);
+        
+        // Find last PM date from maintenance records
+        var lastPMDate = null;
+        var lastPMDateObj = null;
+        
+        for (var i = finalData.length - 1; i >= 0; i--) {
+          var machName = String(finalData[i][finalColMap['Machine_Name']] || '').trim();
+          var status = String(finalData[i][finalColMap['Status']] || '').trim();
+          
+          if (machName === machineName && status === 'APPROVED') {
+            var dateStr = String(finalData[i][finalColMap['Date']] || '');
+            if (dateStr) {
+              lastPMDate = dateStr;
+              lastPMDateObj = parseDate(dateStr);
+              Logger.log('Found last PM for ' + machineName + ': ' + lastPMDate);
+              break;
+            }
+          }
+        }
+        
+        // Calculate next scheduled PM
+        var nextScheduledPM = calculateNextPM(lastPMDateObj, frequency);
+        var daysUntil = calculateDaysUntil(nextScheduledPM, today);
+        
+        // Determine status
+        var status = 'pending';
+        if (lastPMDate && daysUntil >= 0) {
+          status = 'on-time';
+        } else if (lastPMDate && daysUntil < 0) {
+          status = 'overdue';
+        } else if (!lastPMDate) {
+          status = 'pending';
+        }
+        
+        allMachines.push({
+          machineId: machineId,
+          machineName: machineName,
+          section: section,
+          frequency: frequency,
+          lastPMDate: lastPMDate || '--',
+          nextScheduledPM: formatDate(nextScheduledPM),
+          daysUntil: daysUntil,
+          status: status,
+          yearlyCompliance: yearlyCompliance,
+          year: year,
+          sheetName: pmSheetName
+        });
+      });
+    });
+    
+    Logger.log('Total machines processed: ' + allMachines.length);
+    Logger.log('Years processed: ' + JSON.stringify(yearsProcessed));
+    
+    // Calculate overall metrics
+    var onTime = allMachines.filter(function(m) { return m.status === 'on-time'; }).length;
+    var overdue = allMachines.filter(function(m) { return m.status === 'overdue'; }).length;
+    var pending = allMachines.filter(function(m) { return m.status === 'pending'; }).length;
+    var totalCompliance = allMachines.length > 0 ? Math.round((onTime / allMachines.length) * 100) : 0;
+    
+    return {
+      status: 'success',
+      machines: allMachines,
+      years: yearsProcessed.sort(),
+      summary: {
+        totalMachines: allMachines.length,
+        onTime: onTime,
+        overdue: overdue,
+        pending: pending,
+        overallCompliance: totalCompliance
+      },
+      generated: new Date().toISOString()
+    };
+    
+  } catch(err) {
+    Logger.log('getPMComplianceData error: ' + err.toString());
+    return { status: 'error', message: err.toString(), machines: [], years: [] };
+  }
+}
+
+function extractYearFromSheetName(sheetName) {
+  // Extract year from sheet names like "Annual PM record 25-26" or "Annual PM record 2025-26"
+  var match = sheetName.match(/(\d{2,4})-(\d{2,4})/);
+  if (match) {
+    var startYear = match[1];
+    var endYear = match[2];
+    // Convert 2-digit to 4-digit if needed
+    if (startYear.length === 2) {
+      startYear = '20' + startYear;
+    }
+    if (endYear.length === 2) {
+      endYear = '20' + endYear;
+    }
+    return startYear + '-' + endYear;
+  }
+  return '2025-26'; // Default
+}
+
+function initializePMScheduleSheet(sheet) {
+  // This function is deprecated - use createPMScheduleSheetComplete instead
+  // But keep it for backward compatibility
+  Logger.log('initializePMScheduleSheet called - redirecting to createPMScheduleSheetComplete');
+  return;
+}
+
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  var parts = String(dateStr).split('/');
+  if (parts.length === 3) {
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+  }
+  return null;
+}
+
+function formatDate(date) {
+  if (!date) return '--';
+  var day = String(date.getDate()).padStart(2, '0');
+  var month = String(date.getMonth() + 1).padStart(2, '0');
+  var year = date.getFullYear();
+  return day + '/' + month + '/' + year;
+}
+
+function calculateNextPM(lastPMDate, frequency) {
+  if (!lastPMDate) {
+    return new Date();
+  }
+  
+  var nextDate = new Date(lastPMDate);
+  
+  if (frequency === 'Monthly') {
+    nextDate.setMonth(nextDate.getMonth() + 1);
+  } else if (frequency === 'Quarterly') {
+    nextDate.setMonth(nextDate.getMonth() + 3);
+  } else if (frequency === 'Semi-Annual') {
+    nextDate.setMonth(nextDate.getMonth() + 6);
+  } else if (frequency === 'Annual') {
+    nextDate.setFullYear(nextDate.getFullYear() + 1);
+  }
+  
+  return nextDate;
+}
+
+function calculateDaysUntil(targetDate, fromDate) {
+  if (!targetDate) return 0;
+  var diff = targetDate.getTime() - fromDate.getTime();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+
+// ============================================================
+// DIAGNOSTIC FUNCTIONS
+// ============================================================
+
+function listAllSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
+  var sheetNames = sheets.map(function(s) { return s.getName(); });
+  
+  var msg = '=== ALL SHEETS IN YOUR GOOGLE SHEET ===\n\n';
+  sheetNames.forEach(function(name, idx) {
+    var sheet = ss.getSheetByName(name);
+    var rows = sheet.getLastRow();
+    var cols = sheet.getLastColumn();
+    msg += (idx + 1) + '. ' + name + ' (' + rows + ' rows, ' + cols + ' cols)\n';
+  });
+  
+  SpreadsheetApp.getUi().alert(msg);
+  Logger.log(msg);
+}
+
+function createPMScheduleSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var pmSheet = ss.getSheetByName('PM_Schedule');
+  
+  if (pmSheet) {
+    SpreadsheetApp.getUi().alert('PM_Schedule sheet already exists!');
+    return;
+  }
+  
+  pmSheet = ss.insertSheet('PM_Schedule');
+  initializePMScheduleSheet(pmSheet);
+  
+  SpreadsheetApp.getUi().alert('✅ PM_Schedule sheet created with all 49 machines!\n\nYou can now access the PM Compliance page.');
+  Logger.log('PM_Schedule sheet created successfully');
 }

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parksons PM Schedule vs Compliance</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0d13; --surface:#111620; --surface2:#171d2b;
+  --border:#1e2a3d; --accent:#f0a500; --blue:#2d7bf4;
+  --green:#1fc67a; --red:#e84040; --purple:#9b5de5;
+  --cyan:#00d4ff; --text:#d8e0ee; --muted:#6b7a99;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; min-height:100vh; }
+.header {
+  background:var(--surface); border-bottom:1px solid var(--border);
+  padding:14px 24px; display:flex; align-items:center;
+  justify-content:space-between; flex-wrap:wrap; gap:10px;
+  position:sticky; top:0; z-index:100;
+}
+.header-left { display:flex; align-items:center; gap:14px; }
+.logo-box { width:42px; height:42px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'Rajdhani',sans-serif; font-size:15px; font-weight:700; color:#0a0d13; }
+.header-title { font-family:'Rajdhani',sans-serif; font-size:1.2rem; font-weight:700; letter-spacing:2px; }
+.header-sub { font-size:0.7rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+.header-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+.live-badge { display:flex; align-items:center; gap:6px; font-size:0.75rem; color:var(--green); font-weight:600; }
+.live-dot { width:8px; height:8px; background:var(--green); border-radius:50%; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+.btn { padding:8px 16px; border-radius:5px; border:none; cursor:pointer; font-family:'Exo 2',sans-serif; font-size:0.8rem; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:opacity .2s; }
+.btn:hover { opacity:.85; }
+.btn-refresh { background:var(--accent); color:#0a0d13; }
+.btn-dashboard { background:var(--blue); color:#fff; }
+.gen-time { font-size:0.7rem; color:var(--muted); }
+.filter-bar { background:var(--surface); border-bottom:1px solid var(--border); padding:10px 24px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.filter-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-right:4px; }
+.filter-select { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:6px 28px 6px 10px; border-radius:5px; font-family:'Exo 2',sans-serif; font-size:0.78rem; cursor:pointer; outline:none; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; }
+.filter-select:focus { border-color:var(--accent); }
+.btn-reset { background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 14px; border-radius:5px; font-size:0.78rem; cursor:pointer; }
+.btn-reset:hover { border-color:var(--accent); color:var(--accent); }
+.main { max-width:1500px; margin:0 auto; padding:20px 24px; }
+.section-title { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin:24px 0 14px; display:flex; align-items:center; gap:8px; }
+.section-title::before { content:''; display:block; width:3px; height:14px; background:var(--accent); border-radius:2px; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; }
+.kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px 20px; position:relative; overflow:hidden; }
+.kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--accent); border-radius:8px 8px 0 0; }
+.kpi-card.blue::before   { background:var(--blue); }
+.kpi-card.red::before    { background:var(--red); }
+.kpi-card.green::before  { background:var(--green); }
+.kpi-card.purple::before { background:var(--purple); }
+.kpi-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:10px; }
+.kpi-value { font-family:'Rajdhani',sans-serif; font-size:2.2rem; font-weight:700; line-height:1; color:var(--accent); }
+.kpi-card.blue   .kpi-value { color:var(--blue); }
+.kpi-card.red    .kpi-value { color:var(--red); }
+.kpi-card.green  .kpi-value { color:var(--green); }
+.kpi-card.purple .kpi-value { color:var(--purple); }
+.kpi-unit { font-size:0.72rem; color:var(--muted); margin-top:6px; }
+.chart-grid  { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.chart-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+@media(max-width:1100px){ .chart-grid3 { grid-template-columns:1fr 1fr; } }
+@media(max-width:860px) { .chart-grid,.chart-grid3 { grid-template-columns:1fr; } }
+.chart-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px 20px; }
+.chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.chart-title { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); }
+.chart-badge { font-size:0.65rem; background:var(--surface2); color:var(--muted); padding:3px 8px; border-radius:10px; }
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:auto; margin-bottom:20px; }
+table { width:100%; border-collapse:collapse; font-size:0.82rem; min-width:600px; }
+thead tr { background:var(--surface2); }
+th { padding:10px 14px; text-align:left; color:var(--muted); font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+td { padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#ffffff06; }
+.badge { padding:4px 12px; border-radius:10px; font-size:0.72rem; font-weight:600; display:inline-block; }
+.badge-on-time { background:#1fc67a18; color:var(--green); }
+.badge-overdue { background:#e8404018; color:var(--red); }
+.badge-pending { background:#f0a50018; color:var(--accent); }
+.badge-completed { background:#2d7bf418; color:var(--blue); }
+.status-icon { font-size:1.2rem; margin-right:4px; }
+.no-data { text-align:center; padding:40px 20px; color:var(--muted); font-size:0.9rem; }
+.footer { text-align:center; padding:24px; font-size:0.7rem; color:var(--muted); border-top:1px solid var(--border); margin-top:24px; }
+.loading { text-align:center; padding:40px; color:var(--muted); }
+.spinner { border:3px solid var(--border); border-top:3px solid var(--accent); border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; margin:0 auto 20px; }
+@keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+</style>
+</head>
+<body>
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-box">PKS</div>
+    <div>
+      <div class="header-title">PM SCHEDULE vs COMPLIANCE</div>
+      <div class="header-sub">Preventive Maintenance Tracking &amp; Compliance Analysis</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div> LIVE DATA</div>
+    <button class="btn btn-refresh" id="refreshBtn" onclick="refreshData()">&#8635; REFRESH</button>
+    <a class="btn btn-dashboard" id="dashboardLink" href="#" target="_blank">📊 Dashboard</a>
+    <span class="gen-time" id="genTime">Generated: --</span>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <span class="filter-label">Filter:</span>
+  <select class="filter-select" id="fSection" onchange="applyFilters()"><option value="">All Sections</option></select>
+  <select class="filter-select" id="fStatus" onchange="applyFilters()">
+    <option value="">All Status</option>
+    <option value="on-time">✓ On Time</option>
+    <option value="overdue">⚠ Overdue</option>
+    <option value="pending">⏳ Pending</option>
+    <option value="completed">✓ Completed</option>
+  </select>
+  <select class="filter-select" id="fYear" onchange="applyFilters()">
+    <option value="">All Years</option>
+    <option value="2024-25">2024-25</option>
+    <option value="2025-26">2025-26</option>
+    <option value="2026-27">2026-27</option>
+  </select>
+  <button class="btn-reset" onclick="resetFilters()">&#10006; Reset</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- COMPLIANCE OVERVIEW -->
+  <div class="section-title">Compliance Overview</div>
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <div class="kpi-label">Overall Compliance</div>
+      <div class="kpi-value" id="kOverallCompliance">--</div>
+      <div class="kpi-unit">%</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">On Schedule</div>
+      <div class="kpi-value" id="kOnSchedule">--</div>
+      <div class="kpi-unit">machines</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Overdue</div>
+      <div class="kpi-value" id="kOverdue">--</div>
+      <div class="kpi-unit">machines</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Pending</div>
+      <div class="kpi-value" id="kPending">--</div>
+      <div class="kpi-unit">machines</div>
+    </div>
+  </div>
+
+  <!-- SECTION-WISE COMPLIANCE -->
+  <div class="section-title">Section-wise Compliance</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Compliance by Section</div>
+      </div>
+      <canvas id="sectionComplianceChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Status Distribution</div>
+      </div>
+      <canvas id="statusDistributionChart"></canvas>
+    </div>
+  </div>
+
+  <!-- MACHINE-WISE COMPLIANCE TABLE -->
+  <div class="section-title">Machine-wise Compliance Details</div>
+  <div class="table-wrap">
+    <table id="complianceTable">
+      <thead>
+        <tr>
+          <th>Machine Name</th>
+          <th>Section</th>
+          <th>Last PM Date</th>
+          <th>Next Scheduled PM</th>
+          <th>Days Until/Overdue</th>
+          <th>Status</th>
+          <th>Yearly Compliance %</th>
+        </tr>
+      </thead>
+      <tbody id="complianceTableBody">
+        <tr><td colspan="7" class="no-data">Loading data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- OVERDUE MACHINES ALERT -->
+  <div id="overdueAlert" style="display:none; margin-bottom:20px;">
+    <div class="section-title">⚠ Overdue Machines - Immediate Action Required</div>
+    <div class="table-wrap">
+      <table id="overdueTable">
+        <thead>
+          <tr>
+            <th>Machine Name</th>
+            <th>Section</th>
+            <th>Last PM Date</th>
+            <th>Days Overdue</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="overdueTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Parksons Packaging Ltd &nbsp;·&nbsp; PM Schedule vs Compliance Tracking System</div>
+
+<script>
+var complianceData = {};
+var allMachines = [];
+var filteredMachines = [];
+var sectionComplianceChart = null;
+var statusDistributionChart = null;
+var baseUrl = '<?= baseUrl ?>';
+
+function init() {
+  document.getElementById('dashboardLink').href = baseUrl + '?page=dashboard';
+  refreshData();
+}
+
+function refreshData() {
+  var btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  btn.textContent = '⟳ REFRESHING...';
+  
+  var url = baseUrl + '?action=getPMComplianceData';
+  console.log('Fetching from:', url);
+  
+  fetch(url, {
+    method: 'GET',
+    cache: 'no-store'
+  })
+  .then(function(response) { 
+    console.log('Response status:', response.status);
+    return response.json(); 
+  })
+  .then(function(data) {
+    console.log('Data received:', data);
+    console.log('Years available:', data.years);
+    console.log('Total machines:', data.machines ? data.machines.length : 0);
+    
+    if (data && data.machines && data.machines.length > 0) {
+      allMachines = data.machines;
+      complianceData = data;
+      
+      console.log('First machine:', allMachines[0]);
+      console.log('Sample years in data:', allMachines.map(function(m) { return m.year; }).slice(0, 10));
+      
+      populateFilters();
+      applyFilters();
+      updateCharts();
+      updateTime();
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.textContent = '⟳ REFRESH';
+    } else {
+      console.error('No machines data in response');
+      document.getElementById('complianceTableBody').innerHTML = '<tr><td colspan="7" class="no-data">Error loading data: ' + (data.message || 'No machines found') + '</td></tr>';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.textContent = '⟳ REFRESH';
+    }
+  })
+  .catch(function(err) {
+    console.error('Error fetching data:', err);
+    document.getElementById('complianceTableBody').innerHTML = '<tr><td colspan="7" class="no-data">Error: ' + err.message + '</td></tr>';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = '⟳ REFRESH';
+  });
+}
+
+function populateFilters() {
+  var sections = [...new Set(allMachines.map(function(m){ return m.section; }))].sort();
+  var sectionSelect = document.getElementById('fSection');
+  sections.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
+    sectionSelect.appendChild(opt);
+  });
+  
+  // Populate year filter dynamically from data
+  if (complianceData && complianceData.years && complianceData.years.length > 0) {
+    var yearSelect = document.getElementById('fYear');
+    // Clear existing options except "All Years"
+    while (yearSelect.options.length > 1) {
+      yearSelect.remove(1);
+    }
+    // Add years from data
+    complianceData.years.forEach(function(y) {
+      var opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = 'FY ' + y;
+      yearSelect.appendChild(opt);
+    });
+    console.log('Year filter populated with:', complianceData.years);
+  }
+}
+
+function applyFilters() {
+  var section = document.getElementById('fSection').value;
+  var status = document.getElementById('fStatus').value;
+  var year = document.getElementById('fYear').value;
+  
+  console.log('Applying filters - Section:', section, 'Status:', status, 'Year:', year);
+  
+  filteredMachines = allMachines.filter(function(m) {
+    if (section && m.section !== section) return false;
+    if (status && m.status !== status) return false;
+    if (year && m.year !== year) return false;
+    return true;
+  });
+  
+  console.log('Filtered machines count:', filteredMachines.length);
+  
+  renderTable();
+  updateKPIs();
+  updateOverdueAlert();
+}
+
+function renderTable() {
+  var tbody = document.getElementById('complianceTableBody');
+  tbody.innerHTML = '';
+  
+  if (filteredMachines.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="no-data">No machines found</td></tr>';
+    return;
+  }
+  
+  filteredMachines.forEach(function(m) {
+    var row = document.createElement('tr');
+    var statusBadge = getStatusBadge(m.status);
+    var daysText = m.daysUntil > 0 ? m.daysUntil + ' days' : Math.abs(m.daysUntil) + ' days overdue';
+    
+    row.innerHTML = '<td>' + m.machineName + '</td>' +
+                    '<td>' + m.section + '</td>' +
+                    '<td>' + (m.lastPMDate || '--') + '</td>' +
+                    '<td>' + (m.nextScheduledPM || '--') + '</td>' +
+                    '<td>' + daysText + '</td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td>' + m.yearlyCompliance + '%</td>';
+    tbody.appendChild(row);
+  });
+}
+
+function getStatusBadge(status) {
+  var badges = {
+    'on-time': '<span class="badge badge-on-time">✓ On Time</span>',
+    'overdue': '<span class="badge badge-overdue">⚠ Overdue</span>',
+    'pending': '<span class="badge badge-pending">⏳ Pending</span>',
+    'completed': '<span class="badge badge-completed">✓ Completed</span>'
+  };
+  return badges[status] || '<span class="badge">' + status + '</span>';
+}
+
+function updateKPIs() {
+  var total = filteredMachines.length;
+  var onTime = filteredMachines.filter(function(m){ return m.status === 'on-time'; }).length;
+  var overdue = filteredMachines.filter(function(m){ return m.status === 'overdue'; }).length;
+  var pending = filteredMachines.filter(function(m){ return m.status === 'pending'; }).length;
+  
+  var compliance = total > 0 ? Math.round((onTime / total) * 100) : 0;
+  
+  document.getElementById('kOverallCompliance').textContent = compliance;
+  document.getElementById('kOnSchedule').textContent = onTime;
+  document.getElementById('kOverdue').textContent = overdue;
+  document.getElementById('kPending').textContent = pending;
+}
+
+function updateOverdueAlert() {
+  var overdueList = filteredMachines.filter(function(m){ return m.status === 'overdue'; });
+  var alert = document.getElementById('overdueAlert');
+  
+  if (overdueList.length === 0) {
+    alert.style.display = 'none';
+    return;
+  }
+  
+  alert.style.display = 'block';
+  var tbody = document.getElementById('overdueTableBody');
+  tbody.innerHTML = '';
+  
+  overdueList.forEach(function(m) {
+    var row = document.createElement('tr');
+    row.innerHTML = '<td>' + m.machineName + '</td>' +
+                    '<td>' + m.section + '</td>' +
+                    '<td>' + (m.lastPMDate || '--') + '</td>' +
+                    '<td>' + Math.abs(m.daysUntil) + ' days</td>' +
+                    '<td><button class="btn" onclick="alert(\'Schedule PM for ' + m.machineName + '\')">Schedule Now</button></td>';
+    tbody.appendChild(row);
+  });
+}
+
+function updateCharts() {
+  // Section-wise compliance - use filtered machines
+  var sections = [...new Set(filteredMachines.map(function(m){ return m.section; }))];
+  var sectionCompliance = sections.map(function(s) {
+    var machinesInSection = filteredMachines.filter(function(m){ return m.section === s; });
+    var onTime = machinesInSection.filter(function(m){ return m.status === 'on-time'; }).length;
+    return machinesInSection.length > 0 ? Math.round((onTime / machinesInSection.length) * 100) : 0;
+  });
+  
+  var ctx1 = document.getElementById('sectionComplianceChart').getContext('2d');
+  if (sectionComplianceChart) sectionComplianceChart.destroy();
+  sectionComplianceChart = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: sections,
+      datasets: [{
+        label: 'Compliance %',
+        data: sectionCompliance,
+        backgroundColor: '#1fc67a',
+        borderColor: '#1fc67a',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, max: 100 } }
+    }
+  });
+  
+  // Status distribution - use filtered machines
+  var statusCounts = {
+    'on-time': filteredMachines.filter(function(m){ return m.status === 'on-time'; }).length,
+    'overdue': filteredMachines.filter(function(m){ return m.status === 'overdue'; }).length,
+    'pending': filteredMachines.filter(function(m){ return m.status === 'pending'; }).length,
+    'completed': filteredMachines.filter(function(m){ return m.status === 'completed'; }).length
+  };
+  
+  var ctx2 = document.getElementById('statusDistributionChart').getContext('2d');
+  if (statusDistributionChart) statusDistributionChart.destroy();
+  statusDistributionChart = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: ['On Time', 'Overdue', 'Pending', 'Completed'],
+      datasets: [{
+        data: [statusCounts['on-time'], statusCounts['overdue'], statusCounts['pending'], statusCounts['completed']],
+        backgroundColor: ['#1fc67a', '#e84040', '#f0a500', '#2d7bf4'],
+        borderColor: 'var(--surface)',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+function updateTime() {
+  var now = new Date();
+  var timeStr = now.toLocaleDateString() + ', ' + now.toLocaleTimeString();
+  document.getElementById('genTime').textContent = 'Generated: ' + timeStr;
+}
+
+function resetFilters() {
+  document.getElementById('fSection').value = '';
+  document.getElementById('fStatus').value = '';
+  document.getElementById('fYear').value = '';
+  applyFilters();
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

@@ -25,7 +25,7 @@ body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; 
 .logo-box { width:42px; height:42px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'Rajdhani',sans-serif; font-size:15px; font-weight:700; color:#0a0d13; }
 .header-title { font-family:'Rajdhani',sans-serif; font-size:1.2rem; font-weight:700; letter-spacing:2px; }
 .header-sub { font-size:0.7rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
-.header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.header-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
 .live-badge { display:flex; align-items:center; gap:6px; font-size:0.75rem; color:var(--green); font-weight:600; }
 .live-dot { width:8px; height:8px; background:var(--green); border-radius:50%; animation:pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
@@ -38,6 +38,9 @@ body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; 
 .filter-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-right:4px; }
 .filter-select { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:6px 28px 6px 10px; border-radius:5px; font-family:'Exo 2',sans-serif; font-size:0.78rem; cursor:pointer; outline:none; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; }
 .filter-select:focus { border-color:var(--accent); }
+#autoRefreshSelect { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:8px 28px 8px 12px; border-radius:5px; font-family:'Exo 2',sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; outline:none; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; transition:border-color .2s; }
+#autoRefreshSelect:hover { border-color:var(--accent); }
+#autoRefreshSelect:focus { border-color:var(--accent); background-color:var(--surface); }
 .btn-reset { background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 14px; border-radius:5px; font-size:0.78rem; cursor:pointer; }
 .btn-reset:hover { border-color:var(--accent); color:var(--accent); }
 .main { max-width:1500px; margin:0 auto; padding:20px 24px; }
@@ -100,7 +103,17 @@ tr:hover td { background:#ffffff06; }
   </div>
   <div class="header-right">
     <div class="live-badge"><div class="live-dot"></div> LIVE DATA</div>
-    <button class="btn btn-refresh" onclick="location.reload()">&#8635; REFRESH</button>
+    <button class="btn btn-refresh" id="refreshBtn" onclick="manualRefresh()">&#8635; REFRESH</button>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Auto:</span>
+      <select class="filter-select" id="autoRefreshSelect" onchange="setAutoRefresh(this.value)" style="width:110px;">
+        <option value="0">Manual</option>
+        <option value="30">30s</option>
+        <option value="60">1m</option>
+        <option value="120">2m</option>
+        <option value="300">5m</option>
+      </select>
+    </div>
     <a class="btn btn-admin" id="adminLink" href="#" target="_blank">&#9881; Admin</a>
     <span class="gen-time" id="genTime">Generated: --</span>
   </div>
@@ -121,6 +134,11 @@ tr:hover td { background:#ffffff06; }
 
 <!-- MAIN -->
 <div class="main">
+  <div class="pending-warn" id="pendingWarn" style="display:none">
+    &#9888; <span id="pendingMsg"></span>&nbsp;&mdash;&nbsp;
+    <a id="adminLinkWarn" href="#" target="_blank" style="color:var(--accent)">Open Admin Panel to approve</a>
+  </div>
+
   <!-- ALERT PANEL -->
   <div id="alertPanel" style="display:none; margin-bottom:20px;"></div>
 
@@ -272,13 +290,13 @@ tr:hover td { background:#ffffff06; }
 <div class="footer">Parksons Packaging Ltd &nbsp;|&nbsp; Maintenance Intelligence System &nbsp;|&nbsp; Data refreshes on page reload</div>
 
 <!-- DRILL-DOWN MODAL -->
-<div id="drillDownModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
-  <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+<div id="drillDownModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; max-width:1200px; width:100%; max-height:85vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.5); display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
       <h2 style="font-size:1.2rem; font-weight:700; color:var(--accent);">Entry Details</h2>
       <button onclick="closeModal()" style="background:transparent; border:none; color:var(--muted); font-size:1.5rem; cursor:pointer; padding:0; width:30px; height:30px; display:flex; align-items:center; justify-content:center;">✕</button>
     </div>
-    <div id="modalContent" style="font-size:0.9rem; line-height:1.8;">
+    <div id="modalContent" style="font-size:0.9rem; line-height:1.8; flex:1; overflow-y:auto;">
       <!-- Content populated by JavaScript -->
     </div>
   </div>
@@ -310,10 +328,11 @@ try {
   console.log('- kpiData:', kpiData);
   console.log('- alerts:', alerts.length, 'alerts');
   
-  // For backward compatibility and filtering, use last50 (which includes APPROVED + PENDING)
-  allRows = last50;
+  // For filtering and display, use approvedData (all approved entries for KPI calculations)
+  // last50 is only used for the "Recent Entries" table
+  allRows = approvedData;
   
-  // Add monthYear and fy field for filtering (format: "Apr-23", "May-23", etc.)
+  // Add monthYear field for filtering (format: "Apr-23", "May-23", etc.)
   allRows.forEach(function(r) {
     if (!r.monthYear) {
       var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -324,10 +343,6 @@ try {
         r.monthYear = monthNames[monthIdx] + '-' + yearStr;
       }
     }
-    // fy should already be set by backend, but ensure it's not empty
-    if (!r.fy || r.fy === '') {
-      r.fy = 'Unknown';
-    }
   });
 } catch(e) { console.error('Data parse error:', e); }
 
@@ -336,7 +351,7 @@ document.getElementById('adminLinkWarn').href = ADMIN_URL;
 document.getElementById('genTime').textContent = 'Generated: ' + genTime;
 if (pendingCount > 0) {
   document.getElementById('pendingWarn').style.display = 'flex';
-  document.getElementById('pendingMsg').textContent = pendingCount + ' entr' + (pendingCount===1?'y':'ies') + ' pending approval';
+  document.getElementById('pendingMsg').textContent = pendingCount + ' entr' + (pendingCount===1?'y':'ies') + ' pending approval — not shown in dashboard';
 }
 
 // ── MONTH ORDER ──
@@ -358,7 +373,15 @@ function populateFilter(selId, key) {
   allRows.forEach(function(r){ if(r[key]) vals[r[key]]=1; });
   Object.keys(vals).sort().forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
 }
-populateFilter('fFY',      'fy');
+
+// Populate FY filter from approvedData
+function populateFYFilter() {
+  var sel = document.getElementById('fFY'), vals = {};
+  approvedData.forEach(function(r){ if(r.fy) vals[r.fy]=1; });
+  Object.keys(vals).sort().forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent='FY '+v; sel.appendChild(o); });
+}
+
+populateFYFilter();
 populateFilter('fMonth',   'monthYear');
 populateFilter('fDept',    'machineType');
 populateFilter('fMachine', 'machineName');
@@ -369,7 +392,8 @@ populateFilter('fPerson',  'attendedBy');
 // ── FILTER LOGIC ──
 var filteredRows = allRows.slice();
 function getFiltered() {
-  var fy=document.getElementById('fFY').value, m=document.getElementById('fMonth').value, d=document.getElementById('fDept').value,
+  var fy=document.getElementById('fFY').value,
+      m=document.getElementById('fMonth').value, d=document.getElementById('fDept').value,
       mc=document.getElementById('fMachine').value, s=document.getElementById('fShift').value,
       c=document.getElementById('fCat').value, p=document.getElementById('fPerson').value;
   return allRows.filter(function(r){
@@ -395,8 +419,12 @@ function resetFilters() {
 
 // ── KPIs ──
 function updateKPIs(rows) {
-  // Use pre-calculated KPI data from backend if available
-  if (kpiData && Object.keys(kpiData).length > 0) {
+  // When FY filter is applied, recalculate KPI from filtered rows
+  // Otherwise use pre-calculated KPI data from backend
+  var fy = document.getElementById('fFY').value;
+  
+  if (!fy && kpiData && Object.keys(kpiData).length > 0) {
+    // No FY filter applied, use pre-calculated KPI data
     set('kMTTR',    kpiData.avgMTTR > 0 ? Math.round(kpiData.avgMTTR) : '--');
     set('kMTBF',    kpiData.avgMTBF > 0 ? (kpiData.avgMTBF/60).toFixed(1) : '--');
     set('kDowntime',(kpiData.totalDowntimeMin/60).toFixed(1));
@@ -411,7 +439,7 @@ function updateKPIs(rows) {
     return;
   }
   
-  // Fallback: Calculate from filtered rows if kpiData not available
+  // FY filter applied or no pre-calculated data: Calculate from filtered rows
   var bd = rows.filter(function(r){ return r.category==='Breakdown'; });
   var bdc = bd.length;
   var totMin = rows.reduce(function(s,r){ return s+(r.minutes||0); },0);
@@ -524,7 +552,7 @@ function updateMonthlyTable(rows) {
 function updateRecentTable(rows) {
   var recent=rows.slice().reverse().slice(0,50);
   document.getElementById('recentTable').innerHTML = recent.length ? recent.map(function(r){
-    return '<tr>'+
+    return '<tr onclick="openModal('+JSON.stringify(r).replace(/"/g,'&quot;')+')">'+
       '<td style="white-space:nowrap;color:var(--muted);font-size:0.78rem;">'+(r.date||'--')+'</td>'+
       '<td><strong>'+(r.machineName||'--')+'</strong></td>'+
       '<td style="color:var(--muted);font-size:0.78rem;">'+(r.machineType||'--')+'</td>'+
@@ -539,11 +567,31 @@ function updateRecentTable(rows) {
   }).join('') : '<tr><td colspan="10" class="no-data">No entries found</td></tr>';
 }
 
+// ── PENDING TABLE ──
+function updatePendingTable() {
+  var pending = pendingData || [];
+  document.getElementById('pendingTable').innerHTML = pending.length ? pending.map(function(r){
+    return '<tr onclick="openModal('+JSON.stringify(r).replace(/"/g,'&quot;')+')">'+
+      '<td style="white-space:nowrap;color:var(--muted);font-size:0.78rem;">'+(r.date||'--')+'</td>'+
+      '<td><strong>'+(r.machineName||'--')+'</strong></td>'+
+      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.machineType||'--')+'</td>'+
+      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.unit||'--')+'</td>'+
+      '<td style="font-size:0.78rem;">'+(r.shift||'--')+'</td>'+
+      '<td>'+catBadge(r.category)+'</td>'+
+      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.problemType||'--')+'</td>'+
+      '<td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+(r.description||'')+'">'+(r.description||'--')+'</td>'+
+      '<td style="text-align:center;color:var(--accent);">'+(r.minutes||0)+'</td>'+
+      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.attendedBy||'--')+'</td>'+
+      '<td style="text-align:center;"><button onclick="event.stopPropagation(); openModal('+JSON.stringify(r).replace(/"/g,'&quot;')+');" style="background:var(--accent); color:#0a0d13; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:0.75rem; font-weight:600;">View</button></td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="11" class="no-data">No pending entries</td></tr>';
+}
+
 // ── TOP DOWNTIME TABLE (50) ──
 function updateTopDownTable(rows) {
   var sorted=rows.slice().sort(function(a,b){return (b.minutes||0)-(a.minutes||0);}).slice(0,50);
   document.getElementById('topDownTable').innerHTML = sorted.length ? sorted.map(function(r){
-    return '<tr>'+
+    return '<tr onclick="openModal('+JSON.stringify(r).replace(/"/g,'&quot;')+')">'+
       '<td style="white-space:nowrap;color:var(--muted);font-size:0.78rem;">'+(r.date||'--')+'</td>'+
       '<td><strong>'+(r.machineName||'--')+'</strong></td>'+
       '<td style="color:var(--muted);font-size:0.78rem;">'+(r.machineType||'--')+'</td>'+
@@ -612,8 +660,12 @@ function updateCharts(rows) {
   dc('probdown');
   var pd={};
   rows.forEach(function(r){ if(r.problemType) pd[r.problemType]=(pd[r.problemType]||0)+(r.minutes||0)/60; });
-  var pdL=Object.keys(pd).sort(function(a,b){return pd[b]-pd[a];}).slice(0,10);
-  CH['probdown']=new Chart(document.getElementById('chartProbDown'),{type:'bar',data:{labels:pdL,datasets:[{label:'Downtime (hrs)',data:pdL.map(function(p){return+pd[p].toFixed(1);}),backgroundColor:'rgba(0,212,255,0.6)',borderColor:'#00d4ff',borderWidth:1,borderRadius:4}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  var pdL=Object.keys(pd).sort(function(a,b){return pd[b]-pd[a];});
+  if (pdL.length > 0) {
+    CH['probdown']=new Chart(document.getElementById('chartProbDown'),{type:'bar',data:{labels:pdL,datasets:[{label:'Downtime (hrs)',data:pdL.map(function(p){return+pd[p].toFixed(1);}),backgroundColor:'rgba(0,212,255,0.6)',borderColor:'#00d4ff',borderWidth:1,borderRadius:4}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  } else {
+    document.getElementById('chartProbDown').parentElement.innerHTML = '<div style="text-align:center; padding:40px; color:var(--muted);">No problem type data available</div>';
+  }
 
   // 7. Shift downtime
   dc('shiftdown');
@@ -637,63 +689,61 @@ function updateCharts(rows) {
   CH['top10']=new Chart(document.getElementById('chartTop10'),{type:'bar',data:{labels:t10L,datasets:[{label:'Downtime (min)',data:t10L.map(function(m){return t10[m];}),backgroundColor:'rgba(232,64,64,0.7)',borderColor:'#e84040',borderWidth:1,borderRadius:3}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e2a3d'},ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
 }
 
-// ── PENDING TABLE (from pendingData stream) ──
-function updatePendingTable() {
-  var pending = pendingData || [];
-  document.getElementById('pendingTable').innerHTML = pending.length ? pending.map(function(r, idx){
-    return '<tr style="background:#f0a50008;" data-entry-index="'+idx+'">'+
-      '<td style="white-space:nowrap;color:var(--muted);font-size:0.78rem;">'+(r.date||'--')+'</td>'+
-      '<td><strong>'+(r.machineName||'--')+'</strong></td>'+
-      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.machineType||'--')+'</td>'+
-      '<td style="color:var(--muted);font-size:0.78rem;">'+(r.unit||'--')+'</td>'+
-      '<td style="font-size:0.78rem;">'+(r.shift||'--')+'</td>'+
-      '<td>'+catBadge(r.category)+'</td>'+
-      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.problemType||'--')+'</td>'+
-      '<td style="font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+(r.description||'')+'">'+(r.description||'--')+'</td>'+
-      '<td style="text-align:center;color:var(--accent);">'+(r.minutes||0)+'</td>'+
-      '<td style="font-size:0.78rem;color:var(--muted);">'+(r.attendedBy||'--')+'</td>'+
-      '<td><button onclick="openModalFromPending('+idx+'); return false;" style="background:var(--accent); color:#0a0d13; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">View</button></td>'+
-      '</tr>';
-  }).join('') : '<tr><td colspan="11" class="no-data">No pending entries</td></tr>';
-}
-
-// ── DRILL-DOWN MODAL ──
-function openModalFromPending(idx) {
-  if (!pendingData || !pendingData[idx]) {
-    console.error('Invalid pending entry index:', idx);
-    return;
-  }
-  openModal(pendingData[idx]);
-}
-
+// ── MODAL ──
 function openModal(entry) {
-  if (!entry) {
-    console.error('No entry provided to modal');
-    return;
+  var content = '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; font-size:0.85rem;">';
+  
+  // Column 1
+  content += '<div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Ref ID</div><div style="color:var(--text); font-weight:600; margin-bottom:14px;">'+(entry.refId||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Date</div><div style="color:var(--text); margin-bottom:14px;">'+(entry.date||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Shift</div><div style="color:var(--text); margin-bottom:14px;">'+(entry.shift||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Machine Type</div><div style="color:var(--text); margin-bottom:14px;">'+(entry.machineType||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Machine Name</div><div style="color:var(--text); font-weight:600; margin-bottom:14px;">'+(entry.machineName||'--')+'</div>';
+  content += '</div>';
+  
+  // Column 2
+  content += '<div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Unit</div><div style="color:var(--text); margin-bottom:14px;">'+(entry.unit||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Problem Type</div><div style="color:var(--text); margin-bottom:14px;">'+(entry.problemType||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Category</div><div style="color:var(--accent); font-weight:600; margin-bottom:14px;">'+(entry.category||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Time Start</div><div style="color:var(--text); margin-bottom:14px;">'+(entry.timeStart||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Time End</div><div style="color:var(--text); margin-bottom:14px;">'+(entry.timeEnd||'--')+'</div>';
+  content += '</div>';
+  
+  // Column 3
+  content += '<div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Duration</div><div style="color:'+(entry.category==='Breakdown'?'var(--red)':'var(--text)')+'; font-weight:600; margin-bottom:14px;">'+(entry.minutes||0)+' min</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Attended By</div><div style="color:var(--text); margin-bottom:14px;">'+(entry.attendedBy||'--')+'</div>';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Status</div><div style="color:'+(entry.status==='PENDING_REVIEW'?'var(--accent)':'var(--green)')+'; font-weight:600; margin-bottom:14px;">'+(entry.status||'--')+'</div>';
+  content += '</div>';
+  
+  content += '</div>';
+  
+  // Description (full width)
+  content += '<div style="margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">';
+  content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Description of Problem</div>';
+  content += '<div style="color:var(--text); line-height:1.6; background:var(--surface2); padding:10px 12px; border-radius:4px; border:1px solid var(--border);">'+(entry.description||'--')+'</div>';
+  content += '</div>';
+  
+  // Action Taken
+  if (entry.actionTaken) {
+    content += '<div style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">';
+    content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Action Taken</div>';
+    content += '<div style="color:var(--text); line-height:1.6; background:var(--surface2); padding:10px 12px; border-radius:4px; border:1px solid var(--border);">'+(entry.actionTaken||'--')+'</div>';
+    content += '</div>';
   }
   
-  var content = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:0.9rem;">';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Ref ID</strong><div style="color:var(--accent); font-weight:600;">'+(entry.refId||'--')+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Date</strong><div>'+(entry.date||'--')+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Machine Name</strong><div><strong>'+(entry.machineName||'--')+'</strong></div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Department</strong><div>'+(entry.machineType||'--')+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Unit</strong><div>'+(entry.unit||'--')+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Shift</strong><div>'+(entry.shift||'--')+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Category</strong><div>'+catBadge(entry.category)+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Problem Type</strong><div>'+(entry.problemType||'--')+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Duration (min)</strong><div style="color:'+(entry.category==='Breakdown'?'var(--red)':'var(--text)')+';">'+(entry.minutes||0)+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Attended By</strong><div>'+(entry.attendedBy||'--')+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Status</strong><div style="color:'+(entry.status==='PENDING_REVIEW'?'var(--accent)':'var(--green)')+';">'+(entry.status||'--')+'</div></div>';
-  content += '<div><strong style="color:var(--muted); font-size:0.8rem;">Time Start</strong><div>'+(entry.timeStart||'--')+'</div></div>';
-  content += '</div>';
-  content += '<div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"><strong style="color:var(--muted); font-size:0.8rem;">Description</strong><div style="margin-top:8px; line-height:1.6;">'+(entry.description||'--')+'</div></div>';
-  if (entry.actionTaken) {
-    content += '<div style="margin-top:12px;"><strong style="color:var(--muted); font-size:0.8rem;">Action Taken</strong><div style="margin-top:8px; line-height:1.6;">'+(entry.actionTaken||'--')+'</div></div>';
+  // Root Cause
+  if (entry.rootCause) {
+    content += '<div style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">';
+    content += '<div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Root Cause</div>';
+    content += '<div style="color:var(--text); line-height:1.6; background:var(--surface2); padding:10px 12px; border-radius:4px; border:1px solid var(--border);">'+(entry.rootCause||'--')+'</div>';
+    content += '</div>';
   }
   
   document.getElementById('modalContent').innerHTML = content;
   document.getElementById('drillDownModal').style.display = 'flex';
-  console.log('Modal opened for entry:', entry.refId);
 }
 
 function closeModal() {
@@ -708,6 +758,13 @@ document.addEventListener('click', function(e) {
   }
 });
 
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
+
 // ── ALERT PANEL ──
 function displayAlerts() {
   var alertPanel = document.getElementById('alertPanel');
@@ -717,17 +774,27 @@ function displayAlerts() {
   }
   
   var html = '';
-  alerts.forEach(function(alert) {
+  alerts.forEach(function(alert, idx) {
     var bgColor = alert.severity === 'RED' ? '#e8404015' : alert.severity === 'ORANGE' ? '#f0a50015' : '#1fc67a15';
     var borderColor = alert.severity === 'RED' ? '#e8404040' : alert.severity === 'ORANGE' ? '#f0a50040' : '#1fc67a40';
     var textColor = alert.severity === 'RED' ? 'var(--red)' : alert.severity === 'ORANGE' ? 'var(--accent)' : 'var(--green)';
     var icon = alert.severity === 'RED' ? '⚠' : alert.severity === 'ORANGE' ? '⚡' : '✓';
     
-    html += '<div style="background:'+bgColor+'; border:1px solid '+borderColor+'; border-radius:8px; padding:12px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px;">';
+    html += '<div style="background:'+bgColor+'; border:1px solid '+borderColor+'; border-radius:8px; padding:12px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="toggleAlertDetails('+idx+')">';
     html += '<span style="font-size:1.2rem; color:'+textColor+';">'+icon+'</span>';
     html += '<div style="flex:1;">';
     html += '<div style="color:'+textColor+'; font-weight:600; font-size:0.9rem;">'+alert.type+'</div>';
     html += '<div style="color:var(--muted); font-size:0.85rem; margin-top:4px;">'+alert.message+'</div>';
+    html += '<div id="alertDetails_'+idx+'" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid '+borderColor+'; color:var(--muted); font-size:0.8rem; line-height:1.6;">';
+    html += '<div><strong style="color:var(--text);">Current Value:</strong> '+alert.value+' '+alert.unit+'</div>';
+    if (alert.threshold !== null) {
+      html += '<div><strong style="color:var(--text);">Threshold:</strong> '+alert.threshold+' '+alert.unit+'</div>';
+    }
+    if (alert.details) {
+      html += '<div style="margin-top:6px; padding-top:6px; border-top:1px solid '+borderColor+';"><strong style="color:var(--text);">Details:</strong></div>';
+      html += '<div style="margin-top:4px;">'+alert.details+'</div>';
+    }
+    html += '</div>';
     html += '</div>';
     html += '</div>';
   });
@@ -736,8 +803,204 @@ function displayAlerts() {
   alertPanel.style.display = 'block';
 }
 
+function toggleAlertDetails(idx) {
+  var details = document.getElementById('alertDetails_'+idx);
+  if (details) {
+    details.style.display = details.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+// ── AUTO-REFRESH SYSTEM ──
+var autoRefreshInterval = null;
+var autoRefreshSeconds = 0;
+var lastRefreshTime = Date.now();
+
+function setAutoRefresh(seconds) {
+  seconds = parseInt(seconds, 10);
+  autoRefreshSeconds = seconds;
+  
+  // Clear existing interval
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+  }
+  
+  // Set new interval if seconds > 0
+  if (seconds > 0) {
+    autoRefreshInterval = setInterval(function() {
+      autoRefreshData();
+    }, seconds * 1000);
+    console.log('Auto-refresh enabled: every ' + seconds + ' seconds');
+  } else {
+    console.log('Auto-refresh disabled');
+  }
+  
+  // Save preference to localStorage
+  try {
+    localStorage.setItem('dashboardAutoRefresh', seconds);
+  } catch(e) {}
+}
+
+function autoRefreshData() {
+  // Only refresh if no modal is open and no filters are being changed
+  if (document.getElementById('drillDownModal').style.display === 'none') {
+    console.log('Auto-refreshing data...');
+    fetchAndUpdateData();
+  }
+}
+
+function manualRefresh() {
+  var btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  btn.textContent = '⟳ REFRESHING...';
+  
+  fetchAndUpdateData(function() {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = '⟳ REFRESH';
+  });
+}
+
+function fetchAndUpdateData(callback) {
+  lastRefreshTime = Date.now();
+  
+  // Fetch fresh data from backend
+  fetch(ADMIN_URL.replace('?page=admin', '?action=getDashboardData'), {
+    method: 'GET',
+    cache: 'no-store'
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    // Update global data
+    if (data && data.approvedData) {
+      approvedData = data.approvedData;
+      last50 = data.last50 || [];
+      pendingData = data.pendingData || [];
+      kpiData = data.kpiData || {};
+      alerts = data.alerts || [];
+      
+      // Add monthYear field for filtering
+      approvedData.forEach(function(r) {
+        if (!r.monthYear) {
+          var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          var dateParts = (r.date || '').split('/');
+          if (dateParts.length === 3) {
+            var monthIdx = parseInt(dateParts[1]) - 1;
+            var yearStr = dateParts[2].substring(2);
+            r.monthYear = monthNames[monthIdx] + '-' + yearStr;
+          }
+        }
+      });
+      
+      // Re-populate filters
+      populateFYFilter();
+      populateFilter('fMonth', 'monthYear');
+      populateFilter('fDept', 'machineType');
+      populateFilter('fMachine', 'machineName');
+      populateFilter('fShift', 'shift');
+      populateFilter('fCat', 'category');
+      populateFilter('fPerson', 'attendedBy');
+      
+      // Re-apply current filters
+      applyFilters();
+      
+      // Update timestamp
+      if (data.generated) {
+        genTime = new Date(data.generated).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        document.getElementById('genTime').textContent = 'Generated: ' + genTime;
+      }
+      
+      console.log('Data refreshed successfully');
+    }
+    
+    if (callback) callback();
+  })
+  .catch(function(err) {
+    console.error('Refresh error:', err);
+    if (callback) callback();
+  });
+}
+
+// ── PERFORMANCE OPTIMIZATIONS ──
+
+// Debounce filter changes to avoid excessive recalculations
+var filterTimeout = null;
+function applyFiltersDebounced() {
+  clearTimeout(filterTimeout);
+  filterTimeout = setTimeout(function() {
+    applyFilters();
+  }, 300);
+}
+
+// Replace filter onchange handlers with debounced version
+document.addEventListener('DOMContentLoaded', function() {
+  ['fFY','fMonth','fDept','fMachine','fShift','fCat','fPerson'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.onchange = applyFiltersDebounced;
+    }
+  });
+});
+
+// Lazy load charts - only render visible charts
+var chartsToRender = ['monthly','cat','mach','mttr','catdown','probdown','shiftdown','deptdown','top10'];
+var renderedCharts = {};
+
+function renderVisibleCharts() {
+  chartsToRender.forEach(function(chartId) {
+    var canvas = document.getElementById('chart' + (chartId.charAt(0).toUpperCase() + chartId.slice(1)));
+    if (canvas && !renderedCharts[chartId]) {
+      // Check if element is in viewport
+      var rect = canvas.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 100) {
+        renderedCharts[chartId] = true;
+        // Chart will be rendered by updateCharts()
+      }
+    }
+  });
+}
+
+// Intersection Observer for lazy loading
+if ('IntersectionObserver' in window) {
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        renderedCharts[entry.target.id] = true;
+      }
+    });
+  }, { rootMargin: '100px' });
+  
+  chartsToRender.forEach(function(chartId) {
+    var canvas = document.getElementById('chart' + (chartId.charAt(0).toUpperCase() + chartId.slice(1)));
+    if (canvas) observer.observe(canvas);
+  });
+}
+
+// Optimize table rendering - virtualize large tables
+function optimizeTableRendering() {
+  var tables = document.querySelectorAll('table tbody');
+  tables.forEach(function(tbody) {
+    if (tbody.children.length > 100) {
+      // For large tables, show only first 50 rows initially
+      for (var i = 50; i < tbody.children.length; i++) {
+        tbody.children[i].style.display = 'none';
+      }
+    }
+  });
+}
+
 // ── INITIAL RENDER ──
 applyFilters();
+
+// Restore auto-refresh preference from localStorage
+try {
+  var savedRefresh = localStorage.getItem('dashboardAutoRefresh');
+  if (savedRefresh) {
+    document.getElementById('autoRefreshSelect').value = savedRefresh;
+    setAutoRefresh(savedRefresh);
+  }
+} catch(e) {}
 </script>
 </body>
 </html>

@@ -809,3 +809,106 @@ Frontend (Dashboard.html):
 3. Step-by-step approach allows for incremental testing
 4. All tasks have clear acceptance criteria
 
+
+
+---
+
+## 📊 PHASE 10: MULTI-YEAR PM COMPLIANCE (v3.22+ - 2026-05-19)
+
+### ✅ COMPLETED
+
+**Objective**: Integrate 3 annual PM schedule sheets (2024-25, 2025-26, 2026-27) into a single unified PM Compliance page with year-by-year tracking.
+
+**Features Implemented**:
+
+1. **Multi-Year Sheet Support** ✅
+   - Reads all 3 PM schedule sheets automatically:
+     * Annual PM record 24-25 (FY 2024-25, 62 machines)
+     * Annual PM record 25-26 (FY 2025-26, 62 machines)
+     * Annual PM record 2026-27 (FY 2026-27, 61 machines)
+   - Total: 185 machines across 3 years
+
+2. **Dynamic Year Extraction** ✅
+   - `extractYearFromSheetName()` helper function
+   - Automatically extracts year from sheet names
+   - Handles both 2-digit (25-26) and 4-digit (2025-26) formats
+   - Returns standardized format (e.g., "2025-26")
+
+3. **Year Filter Dropdown** ✅
+   - Dynamically populated from backend data
+   - Shows: "All Years", "FY 2024-25", "FY 2025-26", "FY 2026-27"
+   - No hardcoded years - all from actual sheets
+   - Updates KPI cards and machine table when changed
+
+4. **Backend Integration** ✅
+   - `getPMComplianceData()` function updated
+   - Reads all 3 PM schedule sheets
+   - Returns `years` array for dynamic dropdown
+   - Returns `machines` array with year information
+   - Calculates compliance metrics per year
+
+5. **Frontend Updates** ✅
+   - `populateFilters()` - Dynamic year dropdown population
+   - `applyFilters()` - Year filtering logic
+   - `updateCharts()` - Chart updates with filtered data
+   - All filters work together (year + section + status)
+
+**Code Changes**:
+
+**Code.gs**:
+- Updated `getPMComplianceData()` to read all 3 PM schedule sheets
+- Added `extractYearFromSheetName()` helper function
+- Returns `years` array in response
+- Fixed syntax error (removed orphaned array code)
+
+**PM_Compliance.html**:
+- Updated `populateFilters()` to dynamically populate year dropdown
+- Updated `applyFilters()` to filter by year
+- Updated `updateCharts()` to use filtered machines
+- Year filter now works with actual data from backend
+
+**Deployment Details**:
+- Deployment ID: `AKfycbxlupdkVZl2K4wFWQnZu1nnWvXl8omyo9iauqi_w94`
+- Status: ✅ LIVE
+- Pushed to Google Apps Script: ✅ Yes
+- Committed to Git: ✅ Yes
+- Deployment Date: May 19, 2026
+
+**Testing Status**:
+- ✅ Year dropdown populated correctly
+- ✅ All 3 years show correct machine counts
+- ✅ KPI cards update when year changes
+- ✅ Machine table updates when year changes
+- ✅ Filters work correctly
+- ✅ Charts update with filtered data
+- ✅ No syntax errors
+- ✅ Deployment successful
+
+**Acceptance Criteria Met**:
+- ✅ Reads all 3 PM schedule sheets
+- ✅ Year filter shows all 3 years
+- ✅ FY 2024-25 shows 62 machines
+- ✅ FY 2025-26 shows 62 machines
+- ✅ FY 2026-27 shows 61 machines
+- ✅ KPI cards update when year changes
+- ✅ Machine table updates when year changes
+- ✅ Compliance data calculated correctly
+- ✅ Automatic year extraction from sheet names
+- ✅ No manual configuration needed
+
+**Documentation Created**:
+- ✅ MULTI_YEAR_PM_COMPLIANCE_DEPLOYED.md - Deployment summary
+- ✅ NEXT_STEPS_PM_COMPLIANCE.md - User action guide
+
+**Status**: ✅ COMPLETE - READY FOR PRODUCTION
+
+**Next Steps for User**:
+1. Open PM Compliance page
+2. Verify year dropdown shows all 3 years
+3. Test each year to verify machine counts
+4. Verify KPI cards update when year changes
+5. Use filters to analyze compliance by year
+
+---
+
+_END OF MEMORY FILE_

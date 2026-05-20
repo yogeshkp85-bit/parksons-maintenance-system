@@ -1555,14 +1555,30 @@ function getPMComplianceData() {
     
     // Try to get PM schedule sheets in order of preference
     var pmSheets = [];
-    var sheetNames = ['Annual PM record 25-26', 'Annual PM record 24-25', 'Annual PM record 2026-27', 'PM_Schedule_Master', 'PM_Schedule'];
+    var sheetNames = ['Annual PM Record 24-25', 'Annual PM Record 25-26', 'Annual PM Record 2026-27', 'Annual PM record 25-26', 'Annual PM record 24-25', 'Annual PM record 2026-27', 'PM_Schedule_Master', 'PM_Schedule'];
+    
+    Logger.log('=== getPMComplianceData START ===');
+    Logger.log('Looking for PM schedule sheets...');
+    Logger.log('Available sheets in spreadsheet:');
+    var allSheets = ss.getSheets();
+    allSheets.forEach(function(s) {
+      Logger.log('  - ' + s.getName() + ' (' + s.getLastRow() + ' rows)');
+    });
     
     for (var i = 0; i < sheetNames.length; i++) {
       var sheet = ss.getSheetByName(sheetNames[i]);
       if (sheet && sheet.getLastRow() > 1) {
-        pmSheets.push({ name: sheetNames[i], sheet: sheet });
+        // Check if we already have this year to avoid duplicates
+        var year = extractYearFromSheetName(sheetNames[i]);
+        var alreadyHasYear = pmSheets.some(function(ps) { return extractYearFromSheetName(ps.name) === year; });
+        if (!alreadyHasYear) {
+          Logger.log('Found PM sheet: ' + sheetNames[i] + ' (Year: ' + year + ')');
+          pmSheets.push({ name: sheetNames[i], sheet: sheet });
+        }
       }
     }
+    
+    Logger.log('Total PM sheets found: ' + pmSheets.length);
     
     if (pmSheets.length === 0) {
       return { status: 'error', message: 'No PM schedule sheets found', machines: [], years: [] };
@@ -1783,6 +1799,25 @@ function calculateDaysUntil(targetDate, fromDate) {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
+// DIAGNOSTIC: Test PM Compliance Data Loading
+function testPMComplianceData() {
+  Logger.log('=== TEST PM COMPLIANCE DATA ===');
+  var result = getPMComplianceData();
+  Logger.log('Result status: ' + result.status);
+  Logger.log('Years found: ' + JSON.stringify(result.years));
+  Logger.log('Total machines: ' + (result.machines ? result.machines.length : 0));
+  if (result.machines && result.machines.length > 0) {
+    Logger.log('First machine: ' + JSON.stringify(result.machines[0]));
+    Logger.log('Sample machines by year:');
+    var yearCounts = {};
+    result.machines.forEach(function(m) {
+      yearCounts[m.year] = (yearCounts[m.year] || 0) + 1;
+    });
+    Logger.log('Year counts: ' + JSON.stringify(yearCounts));
+  }
+  Logger.log('=== END TEST ===');
+  return result;
+}
 
 // ============================================================
 // DIAGNOSTIC FUNCTIONS

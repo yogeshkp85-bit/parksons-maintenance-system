@@ -61,6 +61,9 @@ function onOpen() {
     .addItem('🔍 DIAGNOSTIC: Find Missing Entries', 'findMissingEntries')
     .addItem('📋 DIAGNOSTIC: List All Sheets', 'listAllSheets')
     .addItem('✓ CREATE: Initialize PM_Schedule Sheet', 'createPMScheduleSheetComplete')
+    .addSeparator()
+    .addItem('🔍 PM COMPLIANCE: Test Data Loading', 'testPMComplianceData')
+    .addItem('🔍 PM COMPLIANCE: Diagnose Machine Matching', 'diagnoseMachineMatching')
     .addToUi();
 }
 
@@ -1642,6 +1645,17 @@ function getPMComplianceData() {
         // Handle Excel format columns
         var machineId = String(row[pmColMap['Machine / Equipment ID No'] || pmColMap['Machine_ID'] || pmColMap['Machine ID']] || '').trim();
         var machineName = String(row[pmColMap['Machine / Equipment Name'] || pmColMap['Machine_Name']] || '').trim();
+        
+        // Clean up machine name - remove extra text after newline or common delimiters
+        // Example: "Heidelberg printing machine - CX 1\nMake :- Heidelberg ; Model :- CX102-6+L ; Sr. No. :- 551418."
+        // Should become: "Heidelberg printing machine - CX 1"
+        if (machineName.indexOf('\n') !== -1) {
+          machineName = machineName.split('\n')[0].trim();
+        }
+        if (machineName.indexOf('Make :-') !== -1) {
+          machineName = machineName.split('Make :-')[0].trim();
+        }
+        
         var section = String(row[pmColMap['Section']] || '').trim();
         var frequency = String(row[pmColMap['Frequency of PM'] || pmColMap['Frequency']] || 'Monthly').trim();
         var yearlyCompliance = parseInt(row[pmColMap['Yearly %'] || pmColMap['Yearly_Compliance']] || 0);
@@ -1733,16 +1747,17 @@ function getPMComplianceData() {
 
 function extractYearFromSheetName(sheetName) {
   // Extract year from sheet names like "Annual PM record 25-26" or "Annual PM record 2025-26"
+  // Returns format like "2024-25" (2-digit year format)
   var match = sheetName.match(/(\d{2,4})-(\d{2,4})/);
   if (match) {
     var startYear = match[1];
     var endYear = match[2];
-    // Convert 2-digit to 4-digit if needed
-    if (startYear.length === 2) {
-      startYear = '20' + startYear;
+    // Convert to 2-digit format for consistency
+    if (startYear.length === 4) {
+      startYear = startYear.substring(2); // "2024" -> "24"
     }
-    if (endYear.length === 2) {
-      endYear = '20' + endYear;
+    if (endYear.length === 4) {
+      endYear = endYear.substring(2); // "2025" -> "25"
     }
     return startYear + '-' + endYear;
   }
@@ -1819,9 +1834,97 @@ function testPMComplianceData() {
   return result;
 }
 
-// ============================================================
-// DIAGNOSTIC FUNCTIONS
-// ============================================================
+// DIAGNOSTIC: Check machine name matching between PM sheets and Final_Data
+function diagnoseMachineMatching() {
+  Logger.log('=== DIAGNOSE MACHINE MATCHING ===');
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Get PM sheet machine names
+  var pmSheetNames = ['Annual PM Record 24-25', 'Annual PM Record 25-26', 'Annual PM Record 2026-27'];
+  var pmMachines = {};
+  
+  pmSheetNames.forEach(function(sheetName) {
+    var sheet = ss.getSheetByName(sheetName);
+    if (sheet && sheet.getLastRow() > 1) {
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+      
+      var colMap = {};
+      headers.forEach(function(h, i) {
+        colMap[String(h).trim()] = i;
+      });
+      
+      var machineCol = colMap['Machine / Equipment Name'] || colMap['Machine_Name'] || colMap['Machine Name'] || 0;
+      var machines = [];
+      data.forEach(function(row) {
+        var machineName = String(row[machineCol] || '').trim();
+        if (machineName) machines.push(machineName);
+      });
+      
+      pmMachines[sheetName] = machines;
+      Logger.log('PM Sheet: ' + sheetName + ' - Found ' + machines.length + ' machines');
+      Logger.log('  Sample: ' + machines.slice(0, 3).join(', '));
+    }
+  });
+  
+  // Get Final_Data machine names
+  var finalSheet = ss.getSheetByName('Final_Data');
+  var finalMachines = [];
+  if (finalSheet && finalSheet.getLastRow() > 1) {
+    var headers = finalSheet.getRange(1, 1, 1, finalSheet.getLastColumn()).getValues()[0];
+    var data = finalSheet.getRange(2, 1, finalSheet.getLastRow() - 1, finalSheet.getLastColumn()).getValues();
+    
+    var colMap = {};
+    headers.forEach(function(h, i) {
+      colMap[String(h).trim()] = i;
+    });
+    
+    var machineCol = colMap['Machine_Name'] || 0;
+    var uniqueMachines = {};
+    data.forEach(function(row) {
+      var machineName = String(row[machineCol] || '').trim();
+      if (machineName) uniqueMachines[machineName] = true;
+    });
+    
+    finalMachines = Object.keys(uniqueMachines);
+    Logger.log('Final_Data - Found ' + finalMachines.length + ' unique machines');
+    Logger.log('  Sample: ' + finalMachines.slice(0, 3).join(', '));
+  }
+  
+  // Check for matches
+  Logger.log('=== MATCHING ANALYSIS ===');
+  var allPMMachines = [];
+  Object.keys(pmMachines).forEach(function(sheet) {
+    pmMachines[sheet].forEach(function(m) {
+      if (allPMMachines.indexOf(m) === -1) allPMMachines.push(m);
+    });
+  });
+  
+  var matches = 0;
+  var noMatches = [];
+  allPMMachines.forEach(function(pmMachine) {
+    if (finalMachines.indexOf(pmMachine) !== -1) {
+      matches++;
+    } else {
+      noMatches.push(pmMachine);
+    }
+  });
+  
+  Logger.log('Matching machines: ' + matches + ' / ' + allPMMachines.length);
+  Logger.log('Non-matching PM machines (first 10):');
+  noMatches.slice(0, 10).forEach(function(m) {
+    Logger.log('  - "' + m + '"');
+  });
+  
+  Logger.log('=== END DIAGNOSIS ===');
+  
+  return {
+    pmMachineCount: allPMMachines.length,
+    finalDataMachineCount: finalMachines.length,
+    matchingCount: matches,
+    nonMatchingPMMachines: noMatches
+  };
+}
 
 function listAllSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();

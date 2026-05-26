@@ -419,42 +419,40 @@ function getDashboardData() {
   }
   
   // STREAM B: Get ALL data from Raw_Data (for table display)
+  // Raw_Data uses COL numeric indices, NOT header names
   var rawSheet = ss.getSheetByName(CONFIG.sheetName);
   var rawData = [];
   if (rawSheet && rawSheet.getLastRow() > 1) {
-    var headers = rawSheet.getRange(1, 1, 1, rawSheet.getLastColumn()).getValues()[0];
-    var data = rawSheet.getRange(2, 1, rawSheet.getLastRow()-1, rawSheet.getLastColumn()).getValues();
-    var colMap = {};
-    headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
+    var data = rawSheet.getRange(2, 1, rawSheet.getLastRow()-1, 19).getValues();
     
     rawData = data.map(function(row) {
-      var dv = row[colMap['Date']];
+      var dv = row[COL.DATE];
       var dateObj = parseDateValue(dv);
-      var ts = row[colMap['Time_Start']] || '';
-      var te = row[colMap['Time_End']] || '';
+      var ts = row[COL.TIME_START] || '';
+      var te = row[COL.TIME_END] || '';
       if (ts instanceof Date) ts = Utilities.formatDate(ts, CONFIG.timezone, 'hh:mm a');
       if (te instanceof Date) te = Utilities.formatDate(te, CONFIG.timezone, 'hh:mm a');
       
       return {
-        refId:       String(row[colMap['Ref_ID']] || ''),
+        refId:       String(row[COL.REF_ID] || ''),
         date:        fmtDate(dateObj),
         fy:          getFinancialYear(dateObj),
         month:       Utilities.formatDate(dateObj, CONFIG.timezone, 'MMM'),
-        shift:       String(row[colMap['Shift']] || '').replace('Thrid','Third'),
-        machineType: String(row[colMap['Machine_Type']] || ''),
-        machineName: String(row[colMap['Machine_Name']] || ''),
-        unit:        String(row[colMap['Unit']] || ''),
-        problemType: String(row[colMap['Problem_Type']] || ''),
-        category:    String(row[colMap['Category']] || ''),
-        description: String(row[colMap['Description']] || '').replace(/\n/g,' ').replace(/\r/g,''),
-        actionTaken: String(row[colMap['Action_Taken']] || ''),
+        shift:       String(row[COL.SHIFT] || '').replace('Thrid','Third'),
+        machineType: String(row[COL.MACH_TYPE] || ''),
+        machineName: String(row[COL.MACH_NAME] || ''),
+        unit:        String(row[COL.UNIT] || ''),
+        problemType: String(row[COL.PROB_TYPE] || ''),
+        category:    String(row[COL.CATEGORY] || ''),
+        description: String(row[COL.DESCRIPTION] || '').replace(/\n/g,' ').replace(/\r/g,''),
+        actionTaken: String(row[COL.ACTION] || ''),
         timeStart:   String(ts),
         timeEnd:     String(te),
-        minutes:     parseFloat(row[colMap['Duration_Min']]) || 0,
-        bdFlag:      parseInt(row[colMap['BD_Flag']]) || 0,
-        availableMin:parseFloat(row[colMap['Available_Time_Min']]) || 44640,
-        attendedBy:  String(row[colMap['Attended_By']] || ''),
-        status:      String(row[colMap['Status']] || 'PENDING_REVIEW')
+        minutes:     parseFloat(row[COL.DURATION]) || 0,
+        bdFlag:      parseInt(row[COL.CATEGORY] === 'Breakdown' ? 1 : 0),
+        availableMin:44640,
+        attendedBy:  String(row[COL.ATTENDED_BY] || ''),
+        status:      String(row[COL.STATUS] || 'PENDING_REVIEW')
       };
     });
   }

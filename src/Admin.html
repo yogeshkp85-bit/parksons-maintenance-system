@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -15,7 +15,7 @@
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; min-height:100vh; }
 
-/* ── LOADING ── */
+/* ΓöÇΓöÇ LOADING ΓöÇΓöÇ */
 .ls { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:999; gap:18px; }
 .ls-logo { font-family:'Rajdhani',sans-serif; font-size:48px; font-weight:700; color:var(--accent); letter-spacing:6px; }
 .ls-bar { width:200px; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
@@ -23,7 +23,7 @@ body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; 
 @keyframes lb { to { width:100%; } }
 .ls-txt { font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
 
-/* ── LOGIN ── */
+/* ΓöÇΓöÇ LOGIN ΓöÇΓöÇ */
 .login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; }
 .login-box {
   background:var(--surface); border:1px solid var(--border); border-radius:8px;
@@ -53,7 +53,7 @@ body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; 
 .btn-login:hover { opacity:.88; }
 .login-err { color:var(--red); font-size:12px; margin-top:8px; display:none; }
 
-/* ── HEADER ── */
+/* ΓöÇΓöÇ HEADER ΓöÇΓöÇ */
 .header {
   background:linear-gradient(135deg,#0d1220,#111a2e);
   border-bottom:2px solid var(--blue);
@@ -72,19 +72,19 @@ body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; 
 .btn-dash { background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 14px; border-radius:4px; font-family:'Exo 2',sans-serif; font-size:12px; cursor:pointer; transition:all .2s; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
 .btn-dash:hover { border-color:var(--accent); color:var(--accent); }
 
-/* ── TABS ── */
+/* ΓöÇΓöÇ TABS ΓöÇΓöÇ */
 .tabs { background:var(--surface); border-bottom:1px solid var(--border); padding:0 28px; display:flex; gap:0; flex-wrap:wrap; }
 .tab { padding:14px 20px; font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; }
 .tab.active { color:var(--blue); border-bottom-color:var(--blue); }
 .tab:hover:not(.active) { color:var(--text); }
 .tab-badge { background:var(--red); color:#fff; font-size:9px; padding:2px 6px; border-radius:8px; margin-left:6px; }
 
-/* ── MAIN ── */
+/* ΓöÇΓöÇ MAIN ΓöÇΓöÇ */
 .main { padding:22px 28px; }
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
 
-/* ── STATS BAR ── */
+/* ΓöÇΓöÇ STATS BAR ΓöÇΓöÇ */
 .stats-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px; }
 .stat { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
 .stat-n { font-family:'Rajdhani',sans-serif; font-size:30px; font-weight:700; }
@@ -94,7 +94,7 @@ body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; 
 .stat.rejected .stat-n { color:var(--red); }
 .stat.total .stat-n   { color:var(--blue); }
 
-/* ── FILTER ROW ── */
+/* ΓöÇΓöÇ FILTER ROW ΓöÇΓöÇ */
 .filter-row { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
 select, .srch { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:7px 12px; border-radius:4px; font-family:'Exo 2',sans-serif; font-size:13px; outline:none; }
 select { appearance:none; -webkit-appearance:none; padding-right:26px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; cursor:pointer; }
@@ -104,7 +104,7 @@ select:focus, .srch:focus { border-color:var(--blue); }
 .btn-approve-all { background:rgba(31,198,122,.15); color:var(--green); border:1px solid rgba(31,198,122,.3); }
 .btn-approve-all:hover { background:rgba(31,198,122,.25); }
 
-/* ── ENTRY CARDS ── */
+/* ΓöÇΓöÇ ENTRY CARDS ΓöÇΓöÇ */
 .entries { display:flex; flex-direction:column; gap:12px; }
 .entry-card { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; transition:border-color .2s; }
 .entry-card.pending  { border-left:3px solid var(--accent); }
@@ -151,7 +151,7 @@ textarea.field-input { resize:vertical; min-height:56px; }
 .empty-icon { font-size:48px; margin-bottom:12px; }
 .empty-txt { font-size:15px; }
 
-/* ── MACHINE DATA & ADMIN USERS PANELS ── */
+/* ΓöÇΓöÇ MACHINE DATA & ADMIN USERS PANELS ΓöÇΓöÇ */
 .panel-section { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:22px; margin-bottom:20px; }
 .panel-section h3 { font-family:'Rajdhani',sans-serif; font-size:16px; font-weight:700; letter-spacing:1px; color:var(--accent); margin-bottom:16px; text-transform:uppercase; }
 .data-table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -182,7 +182,7 @@ textarea.field-input { resize:vertical; min-height:56px; }
 .btn-edit:hover { background:rgba(45,123,244,.1); }
 .panel-msg { font-size:12px; margin-top:10px; min-height:18px; }
 
-/* ── RESPONSIVE ── */
+/* ΓöÇΓöÇ RESPONSIVE ΓöÇΓöÇ */
 @media(max-width:900px) {
   .field-grid { grid-template-columns:repeat(2,1fr); }
   .stats-bar  { grid-template-columns:repeat(2,1fr); }
@@ -208,7 +208,7 @@ textarea.field-input { resize:vertical; min-height:56px; }
 <div class="login-wrap" id="loginWrap" style="display:none">
   <div class="login-box">
     <div class="login-logo">PKS</div>
-    <div class="login-title">Admin Panel — Secure Access</div>
+    <div class="login-title">Admin Panel ΓÇö Secure Access</div>
     <!-- Mode toggle buttons -->
     <div class="login-mode-btns">
       <button class="btn-mode active" id="btnModeSupervisor" onclick="setLoginMode('supervisor')">Supervisor Login</button>
@@ -237,7 +237,7 @@ textarea.field-input { resize:vertical; min-height:56px; }
       <div class="logo">ADM</div>
       <div>
         <div class="h-title">ADMIN PANEL</div>
-        <div class="h-sub">PARKSONS MAINTENANCE — ENTRY APPROVAL SYSTEM</div>
+        <div class="h-sub">PARKSONS MAINTENANCE ΓÇö ENTRY APPROVAL SYSTEM</div>
       </div>
     </div>
     <div class="h-right">
@@ -368,7 +368,7 @@ textarea.field-input { resize:vertical; min-height:56px; }
 </div><!-- end #appWrap -->
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────
+// ΓöÇΓöÇ CONFIG ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 var DEPLOY_URL_FALLBACK = 'https://script.google.com/macros/s/AKfycbyeDqlhh8beleGToHBXQgHcnm785z4xZ6sOAlS_5IHrIzZwoYlxg81wnnpbfpHbmxPA/exec';
 var BASE_URL = '<?= baseUrl ?>';
 if (!BASE_URL || String(BASE_URL).indexOf('script.google.com') === -1) BASE_URL = DEPLOY_URL_FALLBACK;
@@ -381,7 +381,7 @@ if (!BASE_URL || String(BASE_URL).indexOf('script.google.com') === -1) BASE_URL 
   } catch (e) {}
 })();
 
-// ── DROPDOWN OPTIONS ─────────────────────────────────────────
+// ΓöÇΓöÇ DROPDOWN OPTIONS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 var OPTS = {
   shift:    ['First Shift','Second Shift','Third Shift'],
   mType:    ['PRINTING','CORRUGATION','NFDIECUTTING','NFPASTING','LAMINATION','FLDIECUTTING','FLPASTING','HANDPUNCING','LIQUIDLINE','OTHERS','SCRAP'],
@@ -390,14 +390,14 @@ var OPTS = {
   attended: ['Ashish','Shivaji','Sandip','Sharad','Vikas','Ravi','Sachine','Krishna','Dattaram','Akshay','PM team','Baba','Sangram','Ramdas','Chandan','YogeshK','GaneshS','KedarP','YogeshP']
 };
 
-// ── STATE ─────────────────────────────────────────────────────
+// ΓöÇΓöÇ STATE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 var ALL_ENTRIES   = [];
 var CURRENT_TAB   = 'pending';
 var SESSION_OK    = false;
 var LOGIN_MODE    = 'supervisor'; // 'supervisor' | 'superadmin'
 var CURRENT_USER  = null;
 
-// ── LOGIN MODE TOGGLE ─────────────────────────────────────────
+// ΓöÇΓöÇ LOGIN MODE TOGGLE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function setLoginMode(mode) {
   LOGIN_MODE = mode;
   document.getElementById('btnModeSupervisor').classList.toggle('active', mode === 'supervisor');
@@ -407,7 +407,7 @@ function setLoginMode(mode) {
   document.getElementById('loginErr').style.display = 'none';
 }
 
-// ── LOADING + AUTH ────────────────────────────────────────────
+// ΓöÇΓöÇ LOADING + AUTH ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 window.addEventListener('DOMContentLoaded', function() {
   document.getElementById('dashLink').href = BASE_URL + '?page=dashboard';
   setTimeout(function() {
@@ -481,7 +481,7 @@ function showApp(user) {
   loadEntries();
 }
 
-// ── API URL ───────────────────────────────────────────────────
+// ΓöÇΓöÇ API URL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function buildAdminApiUrl(payload) {
   var act = payload.action;
   var url = BASE_URL + '?action=' + encodeURIComponent(act);
@@ -491,7 +491,7 @@ function buildAdminApiUrl(payload) {
   return url;
 }
 
-// ── LOAD ENTRIES ──────────────────────────────────────────────
+// ΓöÇΓöÇ LOAD ENTRIES ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function loadEntries() {
   showLoading();
   fetch(buildAdminApiUrl({ action: 'getPending' }), { method: 'GET', cache: 'no-store' })
@@ -508,7 +508,7 @@ function loadEntries() {
     updateStats();
     renderEntries();
   })
-  .catch(function(e) { showError('Network error: ' + e.toString() + ' — API base: ' + BASE_URL); });
+  .catch(function(e) { showError('Network error: ' + e.toString() + ' ΓÇö API base: ' + BASE_URL); });
 }
 
 function showLoading() {
@@ -520,7 +520,7 @@ function showError(msg) {
     '<div class="empty"><div class="empty-icon">&#x26A0;</div><div class="empty-txt" style="color:var(--red)">'+msg+'</div></div>';
 }
 
-// ── POPULATE FILTER DROPDOWNS ─────────────────────────────────
+// ΓöÇΓöÇ POPULATE FILTER DROPDOWNS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function populateFilterDropdowns() {
   var depts=[], shifts=[], cats=[];
   ALL_ENTRIES.forEach(function(e) {
@@ -538,7 +538,7 @@ function fillSel(id, opts) {
   opts.forEach(function(o){ var x=document.createElement('option'); x.value=o; x.textContent=o; s.appendChild(x); });
 }
 
-// ── STATS ─────────────────────────────────────────────────────
+// ΓöÇΓöÇ STATS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function updateStats() {
   var pending=0, approved=0, rejected=0;
   ALL_ENTRIES.forEach(function(e){
@@ -554,7 +554,7 @@ function updateStats() {
   document.getElementById('tabBadge').textContent = pending;
 }
 
-// ── TABS ──────────────────────────────────────────────────────
+// ΓöÇΓöÇ TABS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 var ENTRY_TABS = ['pending','all','approved','rejected'];
 var ALL_TABS   = ['pending','all','approved','rejected','machineData','adminUsers'];
 
@@ -578,7 +578,7 @@ function switchTab(tab) {
 }
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
-// ── RENDER ENTRIES ────────────────────────────────────────────
+// ΓöÇΓöÇ RENDER ENTRIES ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function renderEntries() {
   var search = (document.getElementById('searchBox').value||'').toLowerCase();
   var fDept  = document.getElementById('filterDept').value;
@@ -609,7 +609,7 @@ function renderEntries() {
   document.getElementById('entriesList').innerHTML = sorted.map(function(e){ return buildCard(e); }).join('');
 }
 
-// ── BUILD ENTRY CARD ─────────────────────────────────────────
+// ΓöÇΓöÇ BUILD ENTRY CARD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function buildCard(e) {
   var isPending = e.status === 'PENDING_REVIEW';
   var cls       = isPending ? 'pending' : (e.status==='APPROVED'?'approved':'rejected');
@@ -623,7 +623,7 @@ function buildCard(e) {
       '<button class="btn-action btn-save" onclick="saveEdits(\''+e.rowNum+'\',\''+e.refId+'\',this)">&#x1F4BE; Save Edits Only</button>' +
       '<button class="btn-action btn-reject" onclick="rejectEntry(\''+e.rowNum+'\',\''+e.refId+'\',this)">&#x2716; Reject</button>';
   } else {
-    actionBtns = '<span style="font-size:12px;color:var(--muted)">Entry '+e.status.toLowerCase()+' — no further action available</span>';
+    actionBtns = '<span style="font-size:12px;color:var(--muted)">Entry '+e.status.toLowerCase()+' ΓÇö no further action available</span>';
   }
 
   function mkInput(name, val, readonlyOverride) {
@@ -636,7 +636,7 @@ function buildCard(e) {
     var opts = optArr.map(function(o){
       return '<option value="'+esc(o)+'"'+(o===val?' selected':'')+'>'+esc(o)+'</option>';
     }).join('');
-    return '<select class="field-input" id="f_'+e.rowNum+'_'+name+'" onchange="markChanged(this)"><option value="">—</option>'+opts+'</select>';
+    return '<select class="field-input" id="f_'+e.rowNum+'_'+name+'" onchange="markChanged(this)"><option value="">ΓÇö</option>'+opts+'</select>';
   }
 
   return '<div class="entry-card '+cls+'" id="card_'+e.rowNum+'">' +
@@ -691,7 +691,7 @@ function buildCard(e) {
   '</div>';
 }
 
-// ── TOGGLE CARD ───────────────────────────────────────────────
+// ΓöÇΓöÇ TOGGLE CARD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function toggleCard(rowNum) {
   var body   = document.getElementById('body_'+rowNum);
   var toggle = document.getElementById('toggle_'+rowNum);
@@ -700,10 +700,10 @@ function toggleCard(rowNum) {
   toggle.classList.toggle('open', !isOpen);
 }
 
-// ── MARK CHANGED FIELDS ───────────────────────────────────────
+// ΓöÇΓöÇ MARK CHANGED FIELDS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function markChanged(el) { el.classList.add('changed'); }
 
-// ── COLLECT FIELD VALUES ─────────────────────────────────────
+// ΓöÇΓöÇ COLLECT FIELD VALUES ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function getFields(rowNum) {
   function v(name) { var el = document.getElementById('f_'+rowNum+'_'+name); return el ? el.value : ''; }
   return {
@@ -726,7 +726,7 @@ function getFields(rowNum) {
   };
 }
 
-// ── API CALL ──────────────────────────────────────────────────
+// ΓöÇΓöÇ API CALL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function callApi(payload, msgId, successMsg, onSuccess) {
   setMsg(msgId, '&#x23F3; Working...', '');
   disableCard(payload.rowNum, true);
@@ -762,7 +762,7 @@ function disableCard(rowNum, disabled) {
   card.querySelectorAll('button').forEach(function(b){ b.disabled = disabled; });
 }
 
-// ── ENTRY ACTIONS ─────────────────────────────────────────────
+// ΓöÇΓöÇ ENTRY ACTIONS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function approveEntry(rowNum, refId, btn) {
   callApi({ action:'approve', rowNum:rowNum, refId:refId }, 'msg_'+rowNum, 'Approved!');
 }
@@ -792,13 +792,13 @@ function approveAllPending() {
   });
 }
 
-// ── ESCAPE HTML ───────────────────────────────────────────────
+// ΓöÇΓöÇ ESCAPE HTML ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function esc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── MACHINE DATA ──────────────────────────────────────────────
+// ΓöÇΓöÇ MACHINE DATA ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function loadMachineData() {
   document.getElementById('machineTableBody').innerHTML =
     '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">Loading...</td></tr>';
@@ -904,7 +904,7 @@ function deleteMachine(mType, mName) {
   .catch(function(){ alert('Network error.'); });
 }
 
-// ── ADMIN USERS ───────────────────────────────────────────────
+// ΓöÇΓöÇ ADMIN USERS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 var SUPER_ADMIN_EMAIL = 'yogeshkp85@gmail.com';
 
 function loadAdminUsers() {

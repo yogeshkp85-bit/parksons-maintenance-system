@@ -397,7 +397,10 @@ function getDashboardData() {
     var colMap = {};
     headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
     
-    approvedData = data.map(function(row) {
+    approvedData = data.filter(function(row) {
+      // Skip empty rows - check if Ref_ID is empty
+      return String(row[colMap['Ref_ID']] || '').trim() !== '';
+    }).map(function(row) {
       var dv = row[colMap['Date']];
       var dateObj = parseDateValue(dv);
       return {
@@ -409,10 +412,14 @@ function getDashboardData() {
         machineType: String(row[colMap['Machine_Type']] || ''),
         machineName: String(row[colMap['Machine_Name']] || ''),
         unit:        String(row[colMap['Unit']] || ''),
+        problemType: String(row[colMap['Problem_Type']] || ''),
         category:    String(row[colMap['Category']] || ''),
+        description: String(row[colMap['Description']] || '').replace(/\n/g,' ').replace(/\r/g,''),
+        actionTaken: String(row[colMap['Action_Taken']] || ''),
         minutes:     parseFloat(row[colMap['Minutes']]) || 0,
         bdFlag:      parseInt(row[colMap['BD_Flag']]) || 0,
         availableMin:parseFloat(row[colMap['Available_Time_Min']]) || 44640,
+        attendedBy:  String(row[colMap['Attended_By']] || ''),
         status:      'APPROVED'
       };
     });
@@ -427,7 +434,10 @@ function getDashboardData() {
     var colMap = {};
     headers.forEach(function(h, i) { colMap[String(h).trim()] = i; });
     
-    rawData = data.map(function(row) {
+    rawData = data.filter(function(row) {
+      // Skip empty rows - check if Ref_ID is empty
+      return String(row[colMap['Ref_ID']] || '').trim() !== '';
+    }).map(function(row) {
       var dv = row[colMap['Date']];
       var dateObj = parseDateValue(dv);
       var ts = row[colMap['Time_Start']] || '';

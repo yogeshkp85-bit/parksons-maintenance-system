@@ -328,9 +328,9 @@ try {
   console.log('- kpiData:', kpiData);
   console.log('- alerts:', alerts.length, 'alerts');
   
-  // For filtering and display, use approvedData (all approved entries for KPI calculations)
-  // last50 is only used for the "Recent Entries" table
-  allRows = approvedData;
+  // For filtering and display, use last50 (APPROVED + PENDING entries from Raw_Data)
+  // approvedData is only used for KPI calculations
+  allRows = last50;
   
   // Add monthYear field for filtering (format: "Apr-23", "May-23", etc.)
   allRows.forEach(function(r) {

@@ -450,7 +450,7 @@ function getDashboardData() {
         actionTaken: String(row[colMap['Action_Taken']] || ''),
         timeStart:   String(ts),
         timeEnd:     String(te),
-        minutes:     parseFloat(row[colMap['Minutes']]) || 0,
+        minutes:     parseFloat(row[colMap['Duration_Min']]) || 0,
         bdFlag:      parseInt(row[colMap['BD_Flag']]) || 0,
         availableMin:parseFloat(row[colMap['Available_Time_Min']]) || 44640,
         attendedBy:  String(row[colMap['Attended_By']] || ''),

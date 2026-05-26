@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PARKSONS MAINTENANCE SYSTEM - Code.gs (v3.5 FINAL)
 // ============================================================
 
@@ -36,7 +36,7 @@ var COL = {
   STATUS:       18
 };
 
-var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbwJcqYqaTMzOKjOrTbWNruYtYW4kxHivM-7EOiVgiz2xvj9B66WiGEbarokvV7Db9Fw/exec';
+var DEPLOYMENT_URL = 'https://script.google.com/macros/s/AKfycbwNZxQ_Yyt_oLw83EY_UOgtSg1Wiv2-d8Y5NlImIu2KbB4Mb-fmPxwl5uBCrO2BOxu6/exec';
 
 function getBaseUrl() {
   return DEPLOYMENT_URL;
@@ -450,7 +450,7 @@ function getDashboardData() {
         actionTaken: String(row[colMap['Action_Taken']] || ''),
         timeStart:   String(ts),
         timeEnd:     String(te),
-        minutes:     parseFloat(row[colMap['Duration_Min']]) || 0,
+        minutes:     parseFloat(row[colMap['Minutes']]) || 0,
         bdFlag:      parseInt(row[colMap['BD_Flag']]) || 0,
         availableMin:parseFloat(row[colMap['Available_Time_Min']]) || 44640,
         attendedBy:  String(row[colMap['Attended_By']] || ''),
